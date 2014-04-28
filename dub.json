@@ -1,0 +1,9 @@
+{
+	"name": "spiderpig",
+	"description": "A graph handling ligrary in D.",
+	"copyright": "Copyright © 2014, Trent Clarke.",
+	"authors": ["trent"],
+	"dependencies": {
+	},
+	"targetType": "library"
+}
