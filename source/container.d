@@ -1,5 +1,9 @@
 import std.algorithm, std.conv, std.range, std.stdio, std.traits;
 
+version(unittest) {
+  import std.range;
+}
+
 package struct Array(T) {
 public:
     this(U)(U[] stuff) if (isImplicitlyConvertible!(U, T)) {
@@ -241,4 +245,119 @@ unittest {
     a.erase(0, 100);
     assert(a.length == 0, "Array should be empty after erasing it all.");
     assert(a.capacity == 0, "Internal capacity should be 0 after erasing all items.");
+}
+
+// ----------------------------------------------------------------------------
+// 
+// ----------------------------------------------------------------------------
+
+package struct List(T) {
+  static struct Node {
+  protected:
+    Node* prev;
+    Node* next;
+
+  public:
+    T value;
+  }
+
+  static struct Range {
+  public:
+    this(Node* front, Node* back) {
+      _front = front;
+      _back = back;
+    }
+
+    @property bool empty() const {
+      return (_front !is null);
+    }
+
+    @property ref T front() 
+    in {
+      assert (_front !is null);
+    }
+    body {
+      return _front.value;
+    }
+
+    void popFront() 
+    in {
+      assert (_front !is null);
+    }
+    body {
+      if (_front is _back)
+        _front = _back = null;
+      else
+        _front = _front.next;
+    }
+
+    @property Range save() { return this; }
+
+  private:
+    Node* _front;
+    Node* _back;
+  }
+
+  @disable this(this);
+
+  invariant() {
+    assert (_size >= 0, "Size must remain positive.");
+  }
+
+  this(Stuff)(Stuff stuff) if(isInputRange!Stuff &&
+                              isImplicitlyConvertible!(ElementType!Range, T)) {
+    foreach(s; stuff)
+      insertBack(s);
+  }
+
+  Range opSlice() { return Range(_front, _back); }
+
+  Node* insertBack(T value) {
+    auto newNode = new Node(null, null, value);
+    if (empty) {
+      _front = _back = newNode;
+    }
+    else {
+      newNode.prev = _back;
+      _front.next = newNode;
+      _back = newNode;
+    }
+
+    _size += 1;
+    return newNode;
+  }
+
+  @property size_t length() const {
+    return _size;
+  }
+
+  @property bool empty() const {
+    return _back is null;
+  }
+
+private:
+  Node* _front;
+  Node* _back;
+  size_t _size;
+}
+
+unittest {
+  writeln("List: default construction.");
+  List!int l;
+  assert (l.length == 0);
+}
+
+unittest {
+  writeln("List: construct from a Range.");
+  auto data = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  auto list = List!int(data); 
+  assert (list.length == data.length, 
+    "Bad length value, expected: " ~ to!string(data.length) ~
+    ", got: " ~ to!string(list.length));
+
+  foreach(x; zip(data, list[])) {
+    assert(x[0] == x[1], 
+      "Bad list value, expected: " ~ to!string(x[0]) ~
+      ", got: " ~ to!string(x[1]));
+  }
 }
