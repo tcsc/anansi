@@ -1,54 +1,36 @@
-import std.traits;
+import std.typecons;
 import container;
 
-final struct ArrayS { }
-final struct ListS { }
+final struct vecS {}
+final struct listS {}
 
-template isSelector(T) {
-    static if (is(T == ArrayS) || is(T == ListS))
-        enum isSelector = true;
-    else
-        enum isSelector = false;
+template Storage(Selector, ValueType) {
 }
 
-final struct DirectedS { }
-final struct UndirectedS { }
-final struct BidirectionalS { }
+template Storage(Selector : vecS, ValueType) {
+  alias StorageType = Array!ValueType;
+  alias IndexType = size_t;
 
-template isDirectionality(T) {
-    enum isDirectionality = (is(T == DirectedS) || 
-                             is(T == UndirectedS) || 
-                             is(T == BidirectionalS));
+  auto push(ref StorageType store, ValueType value) {
+    auto rval = store.insertBack(value);
+    return tuple(rval, true);
+  }
+
+  void erase(ref StorageType store, IndexType index) {
+    store.erase(index);
+  }
 }
 
+template Storage(Selector : listS) {
+  alias StorageType = List!ValueType;
+  alias IndexType = List!(ValueType).Node*;
 
-// ----------------------------------------------------------------------------
-// 
-// ----------------------------------------------------------------------------
+  auto push(ref StorageType, ValueType value) {
+    auto rval = store.insertBack(value);
+    return tuple(rval, true);
+  }
 
-package template ContainerType(S, ValueType) if (isSelector!S) 
-{
-    static if (is(S : ArrayS))
-        alias ContainerType = Array!ValueType;
-    else static if (is(S : ListS))
-        alias ContainerType = DList!ValueType;
+  void erase(ref StorageType store, IndexType index) {
+    store.erase(index);
+  }
 }
-
-// ----------------------------------------------------------------------------
-// 
-// ----------------------------------------------------------------------------
-
-template isGraph(GraphT) {
-    static if(__traits(hasMember, GraphT, "addVertex") &&
-              __traits(hasMember, GraphT, "addEdge") && 
-              __traits(hasMember, GraphT, "vertexCount")) {
-        enum isGraph = true;
-    }
-    else {
-        enum isGraph = false;
-    }
-}
-
-// ----------------------------------------------------------------------------
-// 
-// ----------------------------------------------------------------------------
