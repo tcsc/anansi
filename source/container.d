@@ -316,7 +316,7 @@ package struct List(T) {
     }
 
     @property bool empty() const {
-      return (_front !is null);
+      return (_front is null);
     }
 
     @property ref T front() 
@@ -359,19 +359,50 @@ package struct List(T) {
 
   Range opSlice() { return Range(_front, _back); }
 
-  Node* insertBack(T value) {
+  Node* insertBack(T value) 
+  out(result) {
+    assert (result !is null);
+  }
+  body {
     auto newNode = new Node(null, null, value);
     if (empty) {
       _front = _back = newNode;
     }
     else {
       newNode.prev = _back;
-      _front.next = newNode;
+      _back.next = newNode;
       _back = newNode;
     }
 
     _size += 1;
     return newNode;
+  }
+
+  void remove(Node* node)
+  in {
+    assert (node !is null);
+    assert (_size > 0);
+  }
+  out {
+    assert (_size >= 0);
+  }
+  body {  
+    if (node is _front && node is _back) {
+      _front = _back = null;
+    }
+    else if (node is _front) {
+      _front = _front.next;
+      _front.prev = null;
+    }
+    else if (node is _back) {
+      _back = _back.prev;
+      _back.next = null;
+    }
+    else {
+      node.next.prev = node.prev;
+      node.prev.next = node.next;
+    }
+    --_size;
   }
 
   @property size_t length() const {
@@ -407,4 +438,82 @@ unittest {
       "Bad list value, expected: " ~ to!string(x[0]) ~
       ", got: " ~ to!string(x[1]));
   }
+}
+
+unittest {
+  writeln("List: empty range correctly marked as empty.");
+  List!int l;
+  assert(l[].empty, "An empty range should return empty == true");
+}
+
+unittest {
+  writeln("List: remove only element in list.");
+  List!char l;
+  auto pn = l.insertBack('a');
+  l.remove(pn);
+
+  assert (l.length == 0, 
+    "Length must be 0 after removing the only element.");
+
+  size_t count;
+  foreach(c; l[]) 
+    ++count;
+
+  assert(count == 0, 
+    "Iterting over an empty list should never invoke loop body.");
+}
+
+unittest {
+  writeln("List: remove first element in list.");
+  List!int l;
+  auto n0 = l.insertBack(0); 
+  auto n1 = l.insertBack(1);
+  auto n2 = l.insertBack(2);
+
+  l.remove(n0);
+
+  assert (l.length == 2);
+
+  foreach(x; zip([1, 2], l[])) {
+    assert(x[0] == x[1], 
+      "Bad list value, expected: " ~ to!string(x[0]) ~
+      ", got: " ~ to!string(x[1]));
+  } 
+}
+
+unittest {
+  writeln("List: remove last element in list.");
+  List!int l;
+  auto n0 = l.insertBack(0); 
+  auto n1 = l.insertBack(1);
+  auto n2 = l.insertBack(2);
+
+  l.remove(n2);
+
+  assert (l.length == 2);
+
+  foreach(x; zip([0, 1], l[])) {
+    assert(x[0] == x[1], 
+      "Bad list value, expected: " ~ to!string(x[0]) ~
+      ", got: " ~ to!string(x[1]));
+  } 
+}
+
+unittest {
+  writeln("List: remove all-but-one element in a list.");
+  List!int l;
+  auto n0 = l.insertBack(0); 
+  auto n1 = l.insertBack(1);
+  auto n2 = l.insertBack(2);
+
+  l.remove(n1);
+  l.remove(n2);
+
+  assert (l.length == 1);
+
+  foreach(x; zip([0], l[])) {
+    assert(x[0] == x[1], 
+      "Bad list value, expected: " ~ to!string(x[0]) ~
+      ", got: " ~ to!string(x[1]));
+  } 
 }
