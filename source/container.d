@@ -264,7 +264,8 @@ unittest {
   writeln("Array: erasing a range of items from the array.");
   auto a = Array!int(iota(0, 100, 1));
   a.erase(25, 50);
-  assert (a.length == 50, "Post-erasure length is wrong: " ~ to!string(a.length)); 
+  assert (a.length == 50, 
+    "Post-erasure length is wrong: " ~ to!string(a.length)); 
 
   foreach(i; 0 .. 25)
     assert(a[i] == i, "Bad pre-erased-range value");
@@ -280,6 +281,37 @@ unittest {
   auto a = Array!int(iota(0, 100, 1));
   assert(a.length == 100);
   a.erase(0, 100);
-  assert(a.length == 0, "Array should be empty after erasing it all.");
-  assert(a.capacity == 0, "Internal capacity should be 0 after erasing all items.");
+
+  assert(a.length == 0, 
+    "Array should be empty after erasing it all.");
+
+  assert(a.capacity == 0, 
+    "Internal capacity should be 0 after erasing all items.");
+}
+
+// ----------------------------------------------------------------------------
+// List
+// ----------------------------------------------------------------------------
+
+/**
+ * A doubley-linked list with a deliberately leaky abstraction, for easy use 
+ * with the spiderpig graph types.
+ */
+struct List(T) {
+  static struct Node {
+    Node* prev;
+    Node* next;
+    T _payload;
+  }
+
+  this(Stuff)(Stuff stuff) if (isInputRange!Stuff &&
+                               isImplicitlyConvertible!(ElementType!Stuff, T)) {
+    foreach(s; stuff) 
+      insertBack(s);
+  }
+
+private:
+  Node* _head;
+  Node* _tail;
+  size_t _length;
 }
