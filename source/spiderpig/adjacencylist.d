@@ -1,10 +1,11 @@
 module spiderpig.adjacencylist;
 
-import std.conv, std.range, std.stdio,
+import std.algorithm, std.conv, std.range, std.stdio,
        std.traits,
        std.typecons,
        std.typetuple;
 import spiderpig.container, spiderpig.traits;
+
 
 struct AdjacencyList (VertexStorage = VecS,
                       EdgeStorage = VecS,
@@ -14,37 +15,85 @@ struct AdjacencyList (VertexStorage = VecS,
 {
 public:
     alias VertexDescriptor = StorageIndex!(VertexStorage);
-    alias EdgeDescriptor = Tuple!(VertexDescriptor, "src", 
-                                  StorageIndex!EdgeStorage, "index");
+    alias EdgeIndex = StorageIndex!EdgeStorage;
+
+    struct EdgeDescriptor {
+        package VertexDescriptor src;
+        package EdgeIndex index;
+    }
+ 
+    enum IsUndirected = is(Directionality == UndirectedS);
     enum IsBidirectional = is(Directionality == BidirectionalS);
 
 private:
-    struct Edge {
-        VertexDescriptor dst;
-        static if (!is(EdgeProperty == NoProperty)) {
-            EdgeProperty  _property;
+    /** 
+     *
+     */
+    static struct Edge {
+        this(VertexDescriptor src, VertexDescriptor dst, 
+             EdgeProperty value = EdgeProperty.init) 
+        {
+            _src = src;
+            _dst = dst;
+            static if (isNotNone!EdgeProperty) {
+                _property = value;
+            }
+        }
+
+        private VertexDescriptor _src;
+        private VertexDescriptor _dst;
+
+        public @property VertexDescriptor source() { return _src; }
+        public @property VertexDescriptor target() { return _dst; }
+
+        static if (isNotNone!EdgeProperty) {
+            private EdgeProperty  _property;
+            public @property ref inout(EdgeProperty) value() inout { 
+                return _property; 
+            } 
         }
     }
 
-    struct Vertex {
-    public:
-        static if (isNotNone!VertexProperty) {
-            this(VertexProperty p) { _property = p; }
+    static if (IsUndirected) {
+        alias StoredEdge = List!(Edge).Node*;
+    }
+    else {
+        alias StoredEdge = Edge;
+    }
+
+    static struct Vertex {
+        public this(VertexProperty p = VertexProperty.init) {
+            static if (isNotNone!VertexProperty) {
+                _property = p;
+            }
         }
 
-        this(this) {
+        public this(this) {
             _outEdges = _outEdges.dup;
             static if (IsBidirectional) {
                 _inEdges = _inEdges.dup;
             }
         }
 
+        public auto addOutEdge(StoredEdge edge) {
+            return _outEdges.push(edge);
+        }
 
-    private:
-        Storage!(EdgeStorage, Edge) _outEdges;
+        public ref inout(StoredEdge) outEdge(EdgeIndex index) inout {
+            return _outEdges.get_value(index);
+        }
+
+        public auto outEdges() {
+            return _outEdges.indexRange();
+        }
+
+        private Storage!(EdgeStorage, StoredEdge) _outEdges;
 
         static if (IsBidirectional) {
-            Storage!(EdgeStorage, EdgeDescriptor) _inEdges;
+            private Storage!(EdgeStorage, EdgeDescriptor) _inEdges;
+            public void addInEdge(EdgeDescriptor edge) {
+                _inEdges.push(edge);
+            }
         }
 
         static if (isNotNone!VertexProperty) {
@@ -60,16 +109,15 @@ private:
 
     Storage!(VertexStorage, Vertex) _vertices;
 
-public:
-    static if (isNone!VertexProperty) {
-        VertexDescriptor addVertex() {
-            return _vertices.push(Vertex())[0];
-        }
-    }
-    else {
-        VertexDescriptor addVertex(VertexProperty property) {
-            return _vertices.push(Vertex(property))[0];
-        }
+    static if(IsUndirected) { List!Edge _edges; }
+
+public: 
+    // ------------------------------------------------------------------------ 
+    // Vertex operations
+    // ------------------------------------------------------------------------
+
+    VertexDescriptor addVertex(VertexProperty value = VertexProperty.init) {
+        return _vertices.push(Vertex(value)).index;
     }
 
     @property vertexCount() const {
@@ -81,7 +129,7 @@ public:
      * the graph. The order of the vertices is undefined.
      */
     @property auto vertices() {
-        return _vertices.range();
+        return _vertices.indexRange();
     }
 
     static if (!isNone!VertexProperty) {
@@ -89,7 +137,79 @@ public:
             return _vertices.get_value(v).property;
         }
     }
+
+public:
+    // ------------------------------------------------------------------------ 
+    // Edge operations
+    // ------------------------------------------------------------------------
+
+    alias AddEdgeResult = Tuple!(EdgeDescriptor, "edge", bool, "addedNew");
+
+    AddEdgeResult addEdge(VertexDescriptor src, 
+                          VertexDescriptor dst, 
+                          EdgeProperty value = EdgeProperty()) {
+
+        static if (IsUndirected) {
+            Vertex* pSrc = &_vertices.get_value(src);
+            Vertex* pDst = &_vertices.get_value(dst); 
+            // TODO: check for parallel edge support here, and deal with it
+            auto newEdge = _edges.insertBack(Edge(src, dst));
+            auto index = pSrc.addOutEdge(newEdge).index;
+            pDst.addOutEdge(newEdge);
+            return AddEdgeResult(EdgeDescriptor(src, index), true);
+        }
+        else {
+            auto newEdge = _vertices.get_value(src).addOutEdge(Edge(src, dst, value));
+            auto descriptor = EdgeDescriptor(src, newEdge.index);
+            static if(IsBidirectional) {
+                if (newEdge.addedNew) { 
+                    // if we added a new edge, rather than overwrote an existing one.
+                    // Overwriting will only happen on graph types that don't support 
+                    // parallel edges
+                    _vertices.get_value(dst).addInEdge(descriptor);
+                }
+            }
+            return AddEdgeResult(descriptor, newEdge.addedNew);
+        }
+    }
+
+    VertexDescriptor source(EdgeDescriptor edge) {
+        return edge.src;
+    }
+
+    VertexDescriptor target(EdgeDescriptor edge) {
+        static if (IsUndirected) {
+            return _vertices.get_value(edge.src).outEdge(edge.index).value.target;
+        }
+        else {
+            return _vertices.get_value(edge.src).outEdge(edge.index).target;
+        }
+    }
+
+    auto outEdges(VertexDescriptor vertex) {
+        alias IndexRange = typeof(_vertices.get_value(vertex).outEdges());
+        static struct OutEdgeRange {
+            this(VertexDescriptor src, IndexRange r) { 
+                _src = src;
+                _r = r; 
+            }
+            @property bool empty() { return _r.empty; }
+            @property EdgeDescriptor front() { 
+                return EdgeDescriptor(_src, _r.front);
+            } 
+            void popFront() { _r.popFront(); }
+            private IndexRange _r;
+            private VertexDescriptor _src;
+        }
+        static assert(isInputRange!OutEdgeRange);
+        static assert(is(ElementType!OutEdgeRange == EdgeDescriptor));
+        return OutEdgeRange(vertex, _vertices.get_value(vertex).outEdges());
+    }
 }
+
+// ----------------------------------------------------------------------------
+// Unit Tests
+// ----------------------------------------------------------------------------
 
 unittest {
     writeln("AdjacencyList: Adding a vertex with no property.");
@@ -170,4 +290,45 @@ unittest {
             }
         }
     }
-}}
+}
+
+unittest {
+    writeln("AdjacencyList: Adding edges without properties");
+    foreach(VertexStorage; TypeTuple!(VecS, ListS)) {
+        foreach(EdgeStorage; TypeTuple!(VecS, ListS)) {
+            foreach(Directionality; TypeTuple!(DirectedS, UndirectedS, BidirectionalS)) {
+                alias Graph = AdjacencyList!(VertexStorage, EdgeStorage, Directionality);
+                Graph g;
+                auto vA = g.addVertex();
+                auto vB = g.addVertex();
+                auto vC = g.addVertex();
+                auto vD = g.addVertex();
+
+                auto addUniqueEdge = delegate(Graph.VertexDescriptor s, Graph.VertexDescriptor d) { 
+                    auto tmp = g.addEdge(s, d);
+                    assert(tmp.addedNew, Graph.stringof ~ ": Edge must be unique.");
+                    return tmp.edge;
+                };
+
+                auto eAB = addUniqueEdge(vA, vB);
+                auto eBC = addUniqueEdge(vB, vC);
+                auto eCD = addUniqueEdge(vC, vD);
+                auto eBD = addUniqueEdge(vB, vD);
+
+                auto aOut = array(g.outEdges(vA));
+                assert (aOut.length == 1, 
+                        Graph.stringof ~ ": Expected A to have exactly one out edge, got " 
+                        ~ to!string(aOut.length));
+
+                assert (g.target(aOut[0]) == vB,
+                        Graph.stringof ~ ": Expected A to connect to B");
+
+                auto bOut = array(g.outEdges(vB));
+                auto expected = g.IsUndirected ? 3 : 2; 
+                assert (bOut.length == expected,
+                    Graph.stringof ~ ": Expected " ~ to!string(expected) ~ 
+                    " out edges on B, got " ~ to!string(bOut.length));
+            }
+        }
+    }
+}

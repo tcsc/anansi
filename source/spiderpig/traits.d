@@ -1,6 +1,6 @@
 module spiderpig.traits;
 
-import std.range, std.typecons;
+import std.range, std.traits, std.typecons;
 import spiderpig.container;
 
 final struct VecS {}
@@ -17,10 +17,14 @@ template StorageIndex(Selector : ListS) {
 }
 
 // ----------------------------------------------------------------------------
-//
+// Storage definitions
 // ----------------------------------------------------------------------------
 
-template Storage(Selector, ValueType) {}
+template Storage(Selector, ValueType) {
+    static assert(false, 
+                  "Storage type not defined for selector " ~ 
+                  fullyQualifiedName!Selector);
+}
 
 template Storage(Selector : VecS, ValueType) {
   alias Storage = Array!ValueType;
@@ -31,28 +35,34 @@ template Storage(Selector : ListS, ValueType) {
 }
 
 // ----------------------------------------------------------------------------
-//
+// Operations on a (possibly custom) storage type
 // ----------------------------------------------------------------------------
+
+struct PushResult(IndexType) {
+    IndexType index;
+    bool addedNew;
+}
 
 auto push(Storage, ValueType)(ref Storage store, ValueType value) {
     auto rval = store.insertBack(value);
-    return tuple(rval, true);
+    return PushResult!(typeof(rval))(rval, true);
 }
 
 void erase(Storage, IndexType)(ref Storage store, IndexType index) {
     store.erase(index);
 }
 
-auto range(Storage, ValueType)(ref Storage store) {
-
+auto indexRange(Storage, ValueType)(ref Storage store) {
+    static assert(false, "No implementation of indexRange for type: " ~ 
+                         getFullyQualifiedName!Storage);
 }
 
-auto range(Storage : Array!ValueType, ValueType)(ref Storage store) {
+auto indexRange(Storage : Array!ValueType, ValueType)(ref Storage store) {
     return iota(0, store.length);
 }
 
-auto range(Storage : List!ValueType, ValueType)(ref Storage store) {
-    struct Range {
+auto indexRange(Storage : List!ValueType, ValueType)(ref Storage store) {
+    struct IndexRange {
         alias Node = List!(ValueType).Node;
 
         this(Node* front, Node* back) { _front = front; _back = back; }
@@ -71,9 +81,10 @@ auto range(Storage : List!ValueType, ValueType)(ref Storage store) {
         Node* _back;
     }
 
-    static assert(isInputRange!Range);
+    static assert(isInputRange!IndexRange);
+    static assert(is(ElementType!IndexRange == void*));
 
-    return Range(store.frontNode, store.backNode);
+    return IndexRange(store.frontNode, store.backNode);
 }
 
 // ----------------------------------------------------------------------------
@@ -81,7 +92,9 @@ auto range(Storage : List!ValueType, ValueType)(ref Storage store) {
 
 ref inout(ValueType) get_value(Storage, ValueType, IndexType)(
     ref inout(Storage) store, IndexType index) {
-    static assert(False, "get_value not defined for this type");
+    static assert(false, 
+                  "get_value not defined for storage type: " ~ 
+                  getFullyQualifiedName!Storage);
 }
 
 ref inout(ValueType) get_value(Storage : Array!ValueType, ValueType, IndexType)(
