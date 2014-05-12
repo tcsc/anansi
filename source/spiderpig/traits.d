@@ -52,6 +52,10 @@ void erase(Storage, IndexType)(ref Storage store, IndexType index) {
     store.erase(index);
 }
 
+auto range(Storage)(ref Storage store) {
+    return store[];
+}
+
 auto indexRange(Storage, ValueType)(ref Storage store) {
     static assert(false, "No implementation of indexRange for type: " ~ 
                          getFullyQualifiedName!Storage);

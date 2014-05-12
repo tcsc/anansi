@@ -1,6 +1,9 @@
 module spiderpig.adjacencylist;
 
-import std.algorithm, std.conv, std.range, std.stdio,
+import std.algorithm,
+       std.conv,
+       std.range,
+       std.stdio,
        std.traits,
        std.typecons,
        std.typetuple;
@@ -87,6 +90,10 @@ private:
             return _outEdges.indexRange();
         }
 
+        @property public size_t outDegree() const {
+            return _outEdges.length;
+        }
+
         private Storage!(EdgeStorage, StoredEdge) _outEdges;
 
         static if (IsBidirectional) {
@@ -94,6 +101,12 @@ private:
             public void addInEdge(EdgeDescriptor edge) {
                 _inEdges.push(edge);
             }
+
+            auto inEdges() { return _inEdges.range(); }
+
+            @property public size_t inDegree() const {
+                return _inEdges.length; 
+            } 
         }
 
         static if (isNotNone!VertexProperty) {
@@ -179,7 +192,8 @@ public:
 
     VertexDescriptor target(EdgeDescriptor edge) {
         static if (IsUndirected) {
-            return _vertices.get_value(edge.src).outEdge(edge.index).value.target;
+            auto pEdge = _vertices.get_value(edge.src).outEdge(edge.index).value;
+            return pEdge.target == edge.src ? pEdge.source : pEdge.target;
         }
         else {
             return _vertices.get_value(edge.src).outEdge(edge.index).target;
@@ -205,6 +219,20 @@ public:
         static assert(is(ElementType!OutEdgeRange == EdgeDescriptor));
         return OutEdgeRange(vertex, _vertices.get_value(vertex).outEdges());
     }
+
+    size_t outDegree(VertexDescriptor vertex) const {
+        return _vertices.get_value(vertex).outDegree;
+    }
+
+    static if (IsBidirectional) {
+        size_t inDegree(VertexDescriptor vertex) const {
+            return _vertices.get_value(vertex).inDegree;
+        }
+
+        auto inEdges(VertexDescriptor vertex) {
+            return _vertices.get_value(vertex).inEdges();
+        }
+    } 
 }
 
 // ----------------------------------------------------------------------------
@@ -292,13 +320,63 @@ unittest {
     }
 }
 
+version (unittest) {
+    void checkEdges(Graph)(ref Graph g, 
+                           string name,
+                           Graph.VertexDescriptor src,
+                           Graph.VertexDescriptor[] outTargets,
+                           Graph.VertexDescriptor[] inTargets) {
+        auto outEdges = array(g.outEdges(src));
+        auto outDegree = g.outDegree(src);
+        assert (outDegree == outTargets.length, 
+                Graph.stringof ~ ": Expected " ~ name ~ 
+                " to have out degree of " ~ to!string(outTargets.length) ~ 
+                ", got " ~ to!string(outDegree));
+
+        assert (outEdges.length == outTargets.length, 
+                Graph.stringof ~ ": Expected " ~ name ~ " to have exactly " ~
+                to!string(outTargets.length) ~ " out edge(s), got " ~
+                to!string(outEdges.length));
+
+        foreach (t; outTargets) {
+            assert (any!(e => g.target(e) == t)(outEdges), 
+                    Graph.stringof ~ ": Expected target from " ~ name ~ 
+                    " was not in out edges.");
+        }
+
+        static if (g.IsBidirectional) {
+            auto inDegree = g.inDegree(src);
+            assert (inDegree == inTargets.length, 
+                    Graph.stringof ~ ": Expected " ~ name ~ 
+                    " to have in degree of " ~ to!string(inTargets.length) ~ 
+                    ", got " ~ to!string(inDegree));
+
+            auto inEdges = array(g.inEdges(src));
+            foreach (t; inTargets) {
+                assert (any!(e => g.source(e) == t)(inEdges), 
+                        Graph.stringof ~ ": Expected source in " ~ name ~ 
+                        " was not in in-edges.");
+            }
+        }
+    }
+}
+
 unittest {
     writeln("AdjacencyList: Adding edges without properties");
     foreach(VertexStorage; TypeTuple!(VecS, ListS)) {
         foreach(EdgeStorage; TypeTuple!(VecS, ListS)) {
             foreach(Directionality; TypeTuple!(DirectedS, UndirectedS, BidirectionalS)) {
                 alias Graph = AdjacencyList!(VertexStorage, EdgeStorage, Directionality);
+  
                 Graph g;
+
+                // Graph layout
+                //      B
+                //    / | \
+                //   A  |  C
+                //      | /
+                //      D
+
                 auto vA = g.addVertex();
                 auto vB = g.addVertex();
                 auto vC = g.addVertex();
@@ -315,19 +393,10 @@ unittest {
                 auto eCD = addUniqueEdge(vC, vD);
                 auto eBD = addUniqueEdge(vB, vD);
 
-                auto aOut = array(g.outEdges(vA));
-                assert (aOut.length == 1, 
-                        Graph.stringof ~ ": Expected A to have exactly one out edge, got " 
-                        ~ to!string(aOut.length));
-
-                assert (g.target(aOut[0]) == vB,
-                        Graph.stringof ~ ": Expected A to connect to B");
-
-                auto bOut = array(g.outEdges(vB));
-                auto expected = g.IsUndirected ? 3 : 2; 
-                assert (bOut.length == expected,
-                    Graph.stringof ~ ": Expected " ~ to!string(expected) ~ 
-                    " out edges on B, got " ~ to!string(bOut.length));
+                checkEdges!Graph(g, "A", vA, [vB], []);
+                checkEdges!Graph(g, "B", vB, g.IsUndirected ? [vA, vC, vD] : [vC, vD], [vA]);
+                checkEdges!Graph(g, "C", vC, g.IsUndirected ? [vB, vD] : [vD], [vB]);
+                checkEdges!Graph(g, "D", vD, g.IsUndirected ? [vB, vC] : [], [vB, vC]);
             }
         }
     }
