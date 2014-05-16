@@ -10,15 +10,15 @@ import std.algorithm,
 import spiderpig.container, spiderpig.traits;
 
 
-struct AdjacencyList (VertexStorage = VecS,
-                      EdgeStorage = VecS,
+struct AdjacencyList (alias VertexStorage = VecS,
+                      alias EdgeStorage = VecS,
                       Directionality = DirectedS,
                       VertexProperty = NoProperty,
                       EdgeProperty = NoProperty)
 {
 public:
-    alias VertexDescriptor = StorageIndex!(VertexStorage);
-    alias EdgeIndex = StorageIndex!EdgeStorage;
+    alias VertexDescriptor = VertexStorage.IndexType; // StorageIndex!VertexStorage;
+    alias EdgeIndex = EdgeStorage.IndexType; //StorageIndex!EdgeStorage;
 
     struct EdgeDescriptor {
         package VertexDescriptor src;
@@ -30,7 +30,8 @@ public:
 
 private:
     /** 
-     *
+     * The main storage object for edges. Holds the source and destination 
+     * vertices for the graph, plus any property object. 
      */
     static struct Edge {
         this(VertexDescriptor src, VertexDescriptor dst, 
@@ -64,6 +65,10 @@ private:
         alias StoredEdge = Edge;
     }
 
+    /**
+     * The main storeage object for vertices. Maintains the collection of out- 
+     * (and optionally in-) edves for the vertex, plus any property values.
+     */
     static struct Vertex {
         public this(VertexProperty p = VertexProperty.init) {
             static if (isNotNone!VertexProperty) {
@@ -94,15 +99,15 @@ private:
             return _outEdges.length;
         }
 
-        private Storage!(EdgeStorage, StoredEdge) _outEdges;
+        private EdgeStorage.Store!StoredEdge _outEdges;
 
         static if (IsBidirectional) {
-            private Storage!(EdgeStorage, EdgeDescriptor) _inEdges;
+            private EdgeStorage.Store!(EdgeDescriptor) _inEdges;
             public void addInEdge(EdgeDescriptor edge) {
                 _inEdges.push(edge);
             }
 
-            auto inEdges() { return _inEdges.range(); }
+            auto inEdges() { return _inEdges[]; }
 
             @property public size_t inDegree() const {
                 return _inEdges.length; 
@@ -120,9 +125,17 @@ private:
         }
     }
 
-    Storage!(VertexStorage, Vertex) _vertices;
+    /** 
+     * The main vertex store.
+     */
+    VertexStorage.Store!Vertex _vertices;
 
-    static if(IsUndirected) { List!Edge _edges; }
+    static if(IsUndirected) {
+        /** 
+         * The main store for edge data when the graph is undirected. 
+         */
+        List!Edge _edges; 
+    }
 
 public: 
     // ------------------------------------------------------------------------ 
@@ -160,7 +173,7 @@ public:
 
     AddEdgeResult addEdge(VertexDescriptor src, 
                           VertexDescriptor dst, 
-                          EdgeProperty value = EdgeProperty()) {
+                          EdgeProperty value = EdgeProperty.init) {
 
         static if (IsUndirected) {
             Vertex* pSrc = &_vertices.get_value(src);
@@ -238,6 +251,49 @@ public:
 // ----------------------------------------------------------------------------
 // Unit Tests
 // ----------------------------------------------------------------------------
+
+unittest {
+    writeln("AdjacencyList: Custom storage type");
+
+    struct ArrayS {
+        alias IndexType = size_t;
+        enum IndexesAreStable = true;
+
+        static struct Store(ValueType) {
+            auto push(ValueType value) {
+                size_t rval = _store.length;
+                _store ~= value;
+                return PushResult!(typeof(rval))(rval, true);
+            }
+
+            void erase(IndexType index) {
+                assert (false, "Not Implemented");
+            }
+
+            auto indexRange() {
+                return iota(0, _store.length);
+            }
+
+            ref inout(ValueType) get_value(IndexType index) inout {
+                return _store[index];
+            }
+
+            @property auto dup() {
+                return Store(_store.dup);
+            }
+
+            @property size_t length() const {
+                return _store.length;
+            }
+
+            private ValueType[] _store;
+        }
+    }
+
+    AdjacencyList!(ArrayS, ArrayS, DirectedS, char, string) g;
+    auto v = g.addVertex('a');
+    assert (g[v] == 'a');
+}
 
 unittest {
     writeln("AdjacencyList: Adding a vertex with no property.");
