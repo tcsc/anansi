@@ -27,6 +27,15 @@ final struct VecS {
             return _store[index];
         }
 
+        IndexType rewriteIndex(IndexType removedIndex, IndexType target) {
+            if (target > removedIndex) {
+                return target - 1;
+            }
+            else {
+                return target;
+            }
+        } 
+
         @property auto dup() {
             return Store(_store.dup);
         }

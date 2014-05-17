@@ -48,7 +48,10 @@ private:
         private VertexDescriptor _dst;
 
         public @property VertexDescriptor source() { return _src; }
+        public @property void source(VertexDescriptor v) { _src = v; }
+
         public @property VertexDescriptor target() { return _dst; }
+        public @property void target(VertexDescriptor v) { _dst = v; }
 
         static if (isNotNone!EdgeProperty) {
             private EdgeProperty  _property;
@@ -67,7 +70,7 @@ private:
 
     /**
      * The main storeage object for vertices. Maintains the collection of out- 
-     * (and optionally in-) edves for the vertex, plus any property values.
+     * (and optionally in-) edges for the vertex, plus any property values.
      */
     static struct Vertex {
         public this(VertexProperty p = VertexProperty.init) {
@@ -91,8 +94,12 @@ private:
             return _outEdges.get_value(index);
         }
 
-        public auto outEdges() {
+        public auto outEdgeIndexes() {
             return _outEdges.indexRange();
+        }
+
+        @property public auto outEdges() {
+            return _outEdges[];
         }
 
         @property public size_t outDegree() const {
@@ -164,6 +171,29 @@ public:
         }
     }
 
+    static if (!VertexStorage.IndexesAreStable) {
+        void rewriteEdgeVertices(VertexDescriptor vertex, ref Edge e) {
+            e.source = _vertices.rewriteIndex(vertex, e.source);
+            e.target = _vertices.rewriteIndex(vertex, e.target);        
+        }
+    }
+
+    void removeVertex(VertexDescriptor vertex) {
+        _vertices.erase(vertex);
+        static if( !VertexStorage.IndexesAreStable ) {
+            static if ( IsUndirected ) {
+                foreach(ref e; _edges)
+                    rewriteEdgeVertices(vertex, e);
+            }
+            else {
+                foreach(ref v; _vertices) {
+                    foreach(ref e; v.outEdges())
+                        rewriteEdgeVertices(vertex, e);
+                }
+            }
+        }
+    }
+
 public:
     // ------------------------------------------------------------------------ 
     // Edge operations
@@ -171,6 +201,9 @@ public:
 
     alias AddEdgeResult = Tuple!(EdgeDescriptor, "edge", bool, "addedNew");
 
+    /**
+     * Adds an edge to the graph.
+     */
     AddEdgeResult addEdge(VertexDescriptor src, 
                           VertexDescriptor dst, 
                           EdgeProperty value = EdgeProperty.init) {
@@ -199,10 +232,20 @@ public:
         }
     }
 
+    /**
+     * Fetches the descriptor of the source vertex of the given edge.
+     * \param edge The descriptor of the edge to query.
+     * \returns The descriptor of the supplied edge's source vertex.
+     */
     VertexDescriptor source(EdgeDescriptor edge) {
         return edge.src;
     }
 
+    /**
+     * Fetches the descriptor of the target vertex of the supplied edge.
+     *
+     * \param edge The descriptor of the edge you want to query.
+     */
     VertexDescriptor target(EdgeDescriptor edge) {
         static if (IsUndirected) {
             auto pEdge = _vertices.get_value(edge.src).outEdge(edge.index).value;
@@ -213,8 +256,14 @@ public:
         }
     }
 
+    /**
+     * Lists the outbound edges of a given vertex.
+     * \param vertex The descriptor of the vertex to query.
+     * \returns Returns a range containing the edge descriptors of the supplied
+     *          vertex's outbound edges. 
+     */
     auto outEdges(VertexDescriptor vertex) {
-        alias IndexRange = typeof(_vertices.get_value(vertex).outEdges());
+        alias IndexRange = typeof(_vertices.get_value(vertex).outEdgeIndexes());
         static struct OutEdgeRange {
             this(VertexDescriptor src, IndexRange r) { 
                 _src = src;
@@ -230,7 +279,7 @@ public:
         }
         static assert(isInputRange!OutEdgeRange);
         static assert(is(ElementType!OutEdgeRange == EdgeDescriptor));
-        return OutEdgeRange(vertex, _vertices.get_value(vertex).outEdges());
+        return OutEdgeRange(vertex, _vertices.get_value(vertex).outEdgeIndexes());
     }
 
     size_t outDegree(VertexDescriptor vertex) const {
@@ -286,7 +335,9 @@ unittest {
                 return _store.length;
             }
 
-            private ValueType[] _store;
+            ValueType[] _store;
+
+            alias _store this;
         }
     }
 
@@ -349,7 +400,7 @@ unittest {
                 g[v2] = "narf";
 
                 foreach(x; zip(g.vertices(), ["alpha", "narf", "gamma"][])) {
-                    assert (g[x[0]] == x[1], "Mismatched vertex descriptors");
+                    assert (g[x[0]] == x[1], "Mismatched vertex properties");
                 }
             }
         }
@@ -371,6 +422,59 @@ unittest {
                 assert (g[v2].i == 1);
                 g[v2].i = 42;
                 assert (g[v2].i == 42);
+            }
+        }
+    }
+}
+
+unittest {
+    writeln("AdjacencyList: Erasing a vertex.");
+    foreach(VertexStorage; TypeTuple!(VecS, ListS)) {
+        foreach(EdgeStorage; TypeTuple!(VecS, ListS)) {
+            foreach(Directionality; TypeTuple!(DirectedS, UndirectedS, BidirectionalS)) {
+                alias Graph = AdjacencyList!(VertexStorage, EdgeStorage, Directionality, char, string);
+                Graph g;
+
+                /* artificial scope for namespacing */ {
+                    auto a = g.addVertex('a');
+                    auto b = g.addVertex('b');
+                    auto c = g.addVertex('c');
+                    
+                    auto ac = g.addEdge(a, c, "ac");
+                    auto ca = g.addEdge(c, a, "ca");
+
+                    g.removeVertex(b);
+                }
+
+                assert (g.vertexCount == 2, 
+                    Graph.stringof ~ ": Expected vertex count to be 2, got: " ~ 
+                    to!string(g.vertexCount));
+
+                // assert that we only have the vertices we expect
+                auto vertices = array(g.vertices());
+                foreach(x; zip(vertices, ['a', 'c'])) {
+                    assert (g[x[0]] == x[1], 
+                        Graph.stringof ~ ": Mismatched vertex descriptors");
+                }
+
+                // assert the a -> c edge still holds
+                auto a = vertices[0];
+                auto c = vertices[1];
+                auto ac = g.outEdges(a).front;
+                assert (g.source(ac) == a, 
+                    Graph.stringof ~ ": Source(ac) should be a");
+
+                assert (g.target(ac) == c, 
+                    Graph.stringof ~ ": Target(ac) should be c");
+
+                // assert the c -> a edge still holds
+                auto ca = g.outEdges(c).front;
+                assert (g.source(ca) == c, 
+                    Graph.stringof ~ ": Source(ca) should be c");
+
+                assert (g.target(ca) == a, 
+                    Graph.stringof ~ ": Target(ca) should be a");
+
             }
         }
     }
