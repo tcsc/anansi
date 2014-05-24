@@ -60,6 +60,14 @@ final struct ListS {
             _store.remove(node); 
         }
 
+        void eraseFrontOfRange(List!(ValueType).Range range) 
+        in {
+            assert (!range.empty, "Range must not be empty.");
+        }
+        body {
+            _store.remove(range.frontNode);
+        }
+
         auto indexRange() {
             static struct IndexRange {
                 alias Node = List!(ValueType).Node;

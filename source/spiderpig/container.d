@@ -75,6 +75,15 @@ public:
             _payload.length = _size;
     }
 
+    void eraseFrontOfRange(Range r)
+    in {
+        assert (!r.empty, "Range must not be empty.");
+        assert (r._data is _payload);
+    }
+    body {
+        erase(r._index, 1);
+    }
+
     void reserve(size_t n) {     
         if (_payload.length < n)
             _payload.length = n;
@@ -86,7 +95,9 @@ public:
 
 public:
     static struct Range {
+
         this(T[] data, size_t size) {
+            _index = 0;
             _data = data;
             _size = size;
         }
@@ -121,11 +132,10 @@ public:
         T[] _data;
     }
 
-public:
     /**
      * Provides [] sytax for the array.
      */
-    ref inout(T) opIndex(size_t index) inout
+    public ref inout(T) opIndex(size_t index) inout
     in {
         assert(index < _size, "Index must be less than Array.length.");
     }
@@ -136,7 +146,7 @@ public:
     /**
      * Returns the number of elements currently stored in the array.
      */
-    @property size_t length() const {
+    public @property size_t length() const {
         return _size;
     }
 
@@ -144,20 +154,19 @@ public:
      * Returns the number of items the array could store, given its 
      * current buffer allocation.
      */
-    @property size_t capacity() const {
+    public @property size_t capacity() const {
         return _payload.length;
     }
 
-    @property Array dup() {
+    public @property Array dup() {
         return Array(_size, _payload[0 .. _size].dup);
     }
 
-private:
     /**
      * Ensures that there is storage space a minimum number of elements in
      * the array, possibly over-allocating for efficiency's sake.
      */
-    void ensureSpace(size_t n) {
+    private void ensureSpace(size_t n) {
         if (_payload.length < n) {
             size_t newSize = 1 + ((_payload.length * 3) / 2);
             auto newPayload = new T[newSize];
@@ -166,9 +175,8 @@ private:
         }
     }
 
-private:
-    size_t _size;
-    T[] _payload;
+    private size_t _size;
+    private T[] _payload;
 }
 
 unittest {
@@ -370,8 +378,7 @@ public:
 
 public:
     static struct Node {
-    protected:
-        this(T v, Node* p, Node* n) {
+        protected this(T v, Node* p, Node* n) {
             value = v;
             p = prev;
             n = next; 
@@ -381,17 +388,15 @@ public:
             return next;
         }
 
-    protected:
-        Node* prev;
-        Node* next;
+        protected Node* prev;
+        protected Node* next;
+        public T value;
 
-    public:
-        T value;
+        public @property ref T valueRef() { return value; }
     }
 
     static struct Range {
-    public:
-        this(Node* front, Node* back) {
+        public this(Node* front, Node* back) {
             _front = front;
             _back = back;
         }
@@ -420,6 +425,8 @@ public:
         }
 
         @property Range save() { return this; }
+
+        public @property Node* frontNode() { return _front; }
 
     private:
         Node* _front;
