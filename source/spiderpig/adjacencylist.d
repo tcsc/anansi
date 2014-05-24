@@ -380,6 +380,14 @@ public:
             return e.edgeIndex.valueRef.value;
         }
     }
+
+    /**
+     * Fetches the total number of edges in the graph. For debugging purposes 
+     * only.
+     */
+    @property size_t edgeCount() const {
+        return _edges.length;
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -644,6 +652,8 @@ unittest {
                 auto eCD = addUniqueEdge(vC, vD);
                 auto eBD = addUniqueEdge(vB, vD);
 
+                assert (g.edgeCount == 4, "edgeCount should be 4");
+
                 checkEdges!Graph(g, "A", vA, [vB], []);
                 checkEdges!Graph(g, "B", vB, g.IsUndirected ? [vA, vC, vD] : [vC, vD], [vA]);
                 checkEdges!Graph(g, "C", vC, g.IsUndirected ? [vB, vD] : [vD], [vB]);
@@ -685,7 +695,11 @@ unittest {
                 auto eCD = addUniqueEdge(vC, vD);
                 auto eBD = addUniqueEdge(vB, vD);
 
+                assert (g.edgeCount == 4, "edgeCount should be 4");
+
                 g.removeEdge(eBC);
+
+                assert (g.edgeCount == 3, "edgeCount should be 3");
 
                 checkEdges!Graph(g, "A", vA, [vB], []);
                 checkEdges!Graph(g, "B", vB, g.IsUndirected ? [vA, vD] : [vD], [vA]);
@@ -701,7 +715,7 @@ unittest {
 }
 
 unittest {
-    writeln("AdjacencyList: Edge peoperties are mutable.");
+    writeln("AdjacencyList: Edge properties are mutable.");
 
         foreach(VertexStorage; TypeTuple!(VecS, ListS)) {
         foreach(EdgeStorage; TypeTuple!(VecS, ListS)) {
