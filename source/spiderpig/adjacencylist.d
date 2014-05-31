@@ -60,9 +60,9 @@ public:
      * A handle that can be used by callers to identify a given edge.
      */
     public static struct EdgeDescriptor {
-        package VertexDescriptor src;
-        package VertexDescriptor dst;
-        package EdgeIndex edgeIndex;
+        package const(VertexDescriptor) src;
+        package const(VertexDescriptor) dst;
+        package const(EdgeIndex) edgeIndex;
     }
 
     /**
@@ -104,9 +104,7 @@ public:
             edges.eraseFrontOfRange(r);
         }
 
-        auto outEdges() { return _outEdges[]; } 
-
-        auto outEdgeIndexes() { return _outEdges.indexRange(); }
+        auto outEdges() const { return _outEdges[]; } 
 
         @property public size_t outDegree() const {
             return _outEdges.length;
@@ -121,7 +119,7 @@ public:
                 eraseEdge(_inEdges, edge);
             }
 
-            auto inEdges() { return _inEdges[]; }
+            auto inEdges() const { return _inEdges[]; }
 
             @property public size_t inDegree() const {
                 return _inEdges.length; 
@@ -172,7 +170,7 @@ public:
      * Returns a forward range that yields the descriptors for each vertex in 
      * the graph. The order of the vertices is undefined.
      */
-    @property auto vertices() {
+    @property auto vertices() inout {
         return _vertices.indexRange();
     }
 
@@ -198,7 +196,7 @@ public:
     void removeVertex(VertexDescriptor vertex) {
         _vertices.erase(vertex);
         static if( !VertexStorage.IndexesAreStable ) {
-            foreach(ref e; _edges) {
+            foreach(ref e; _edges[]) {
                 e.source = _vertices.rewriteIndex(vertex, e.source);
                 e.target = _vertices.rewriteIndex(vertex, e.target);
             }
@@ -253,19 +251,23 @@ public:
      * Removes an edge from the graph.  
      */
     void removeEdge(EdgeDescriptor edge) {
-        Vertex* src = &_vertices.get_value(edge.src);
-        src.eraseOutEdge(edge.edgeIndex);
+        VertexDescriptor src = cast(VertexDescriptor) edge.src;
+        VertexDescriptor dst = cast(VertexDescriptor) edge.dst;
+        Vertex* srcVertex = &_vertices.get_value(src);
+        EdgeIndex idx = cast(EdgeIndex) edge.edgeIndex;
+
+        srcVertex.eraseOutEdge(idx);
 
         static if (IsUndirected) {
-            Vertex* dst = &_vertices.get_value(edge.dst);
-            dst.eraseOutEdge(edge.edgeIndex);
+            Vertex* dstVertex = &_vertices.get_value(dst);
+            dstVertex.eraseOutEdge(idx);
         }
         else static if (IsBidirectional) {
-            Vertex* dst = &_vertices.get_value(edge.dst);
-            dst.eraseInEdge(edge.edgeIndex);
+            Vertex* dstVertex = &_vertices.get_value(dst);
+            dstVertex.eraseInEdge(idx);
         }
 
-        _edges.remove(edge.edgeIndex);
+        _edges.remove(idx);
     }
 
     /**
@@ -276,8 +278,8 @@ public:
      *
      * Returns: The descriptor of the supplied edge's source vertex.
      */
-    VertexDescriptor source(EdgeDescriptor edge) {
-        return edge.src;
+    VertexDescriptor source(EdgeDescriptor edge) const {
+        return cast(VertexDescriptor) edge.src;
     }
 
     /**
@@ -286,8 +288,8 @@ public:
      * Params:
      *   edge = The descriptor of the edge you want to query.
      */
-    VertexDescriptor target(EdgeDescriptor edge) {
-        return edge.dst;
+    VertexDescriptor target(EdgeDescriptor edge) const {
+        return cast(VertexDescriptor) edge.dst;
     }
 
     /**
@@ -299,9 +301,9 @@ public:
      * Returns: Returns a range containing the edge descriptors of the 
      *          supplied vertex's outbound edges. 
      */
-    auto outEdges(VertexDescriptor vertex) {
+    auto outEdges(VertexDescriptor vertex) const {
         static struct OutEdgeRange {
-            alias EdgeRange = Vertex.EdgeContainer.Range;
+            alias EdgeRange = Vertex.EdgeContainer.ConstRange;
         
             this(VertexDescriptor src, EdgeRange r) { 
                 _src = src;
@@ -312,14 +314,19 @@ public:
             
             @property EdgeDescriptor front() {
                 auto edge = _r.front;
-                auto s = edge.value._src;
-                auto d = edge.value._dst;
 
                 static if (IsUndirected) {
-                    if (s != _src) swap(s, d);
+                    auto s = edge.value._src; 
+                    auto d = edge.value._dst; 
+                    auto src = (s == _src) ? s : d;
+                    auto dst = (s == _src) ? d : s;
+                }
+                else{
+                    auto src = edge.value._src;
+                    auto dst = edge.value._dst;
                 }
 
-                return EdgeDescriptor(s, d, edge);
+                return EdgeDescriptor(src, dst, edge);
             } 
             
             void popFront() { _r.popFront(); }
@@ -343,9 +350,9 @@ public:
             return _vertices.get_value(vertex).inDegree;
         }
 
-        auto inEdges(VertexDescriptor vertex) {
+        auto inEdges(VertexDescriptor vertex) const {
             static struct InEdgeRange {
-                alias EdgeRange = Vertex.EdgeContainer.Range;
+                alias EdgeRange = Vertex.EdgeContainer.ConstRange;
             
                 this(EdgeRange r) { _r = r; }
 
@@ -373,7 +380,7 @@ public:
 
     static if (!isNone!EdgeProperty) {
         ref EdgeProperty opIndex(EdgeDescriptor e) {
-            return e.edgeIndex.valueRef.value;
+            return (cast(EdgeIndex)e.edgeIndex).valueRef.value;
         }
 
         ref const(EdgeProperty) opIndex(EdgeDescriptor e) const {
@@ -418,7 +425,7 @@ unittest {
                 assert (false, "Not Implemented");
             }
 
-            auto indexRange() {
+            auto indexRange() const {
                 return iota(0, _store.length);
             }
 
@@ -435,6 +442,8 @@ unittest {
             }
 
             ValueType[] _store;
+
+            alias ConstRange = const(ValueType)[];
 
             alias _store this;
         }

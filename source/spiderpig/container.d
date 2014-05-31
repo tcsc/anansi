@@ -24,7 +24,7 @@ public:
                                  !is(Stuff == T[])) {
         foreach(s; stuff) 
             insertBack(s);
-    } 
+    }
 
     this(this) {
         _payload = _payload[0 .. _size].dup;
@@ -75,7 +75,8 @@ public:
             _payload.length = _size;
     }
 
-    void eraseFrontOfRange(Range r)
+    void eraseFrontOfRange(RangeT)(RangeT r) 
+        if (is(RangeT == Range!T) || is(RangeT == Range!(const T)))
     in {
         assert (!r.empty, "Range must not be empty.");
         assert (r._data is _payload);
@@ -89,14 +90,17 @@ public:
             _payload.length = n;
     }
 
-    Range opSlice() {
-        return Range(_payload, _size);
+    auto opSlice() {
+        return Range!(T)(_payload, _size);
+    }
+
+    auto opSlice() const {
+        return Range!(const T)(_payload, _size);
     }
 
 public:
-    static struct Range {
-
-        this(T[] data, size_t size) {
+    static struct Range(ElementT) {
+        this(ElementT[] data, size_t size) {
             _index = 0;
             _data = data;
             _size = size;
@@ -110,7 +114,7 @@ public:
             return _size;
         } 
 
-        @property ref T front() 
+        @property ref ElementT front() 
         in {
             assert (_index < _size);
         }
@@ -129,8 +133,10 @@ public:
     private:
         size_t _index;
         size_t _size;
-        T[] _data;
+        ElementT[] _data;
     }
+
+    alias ConstRange = Range!(const T);
 
     /**
      * Provides [] sytax for the array.
@@ -358,8 +364,8 @@ unittest {
 // ----------------------------------------------------------------------------
 
 /**
- * A doubley-linked list with a deliberately leaky abstraction, for easy use 
- * with the spiderpig graph types.
+ * A doubley-linked list with a deliberately leaky abstraction. This container 
+ * is explicitly for use with the spiderpig graph classes. 
  */
 package struct List(T) {
 private:
@@ -377,6 +383,9 @@ public:
     }
 
 public:
+    /**
+     * The internal data storage object 
+     */
     static struct Node {
         protected this(T v, Node* p, Node* n) {
             value = v;
@@ -384,7 +393,7 @@ public:
             n = next; 
         }
 
-        package @property Node* nextNode() {
+        package @property inout(Node*) nextNode() inout {
             return next;
         }
 
@@ -392,7 +401,49 @@ public:
         protected Node* next;
         public T value;
 
-        public @property ref T valueRef() { return value; }
+        public @property ref inout(T) valueRef() inout { 
+            return value; 
+        }
+    }
+
+    static struct ConstRange {
+        public this(const(Node)* front, const(Node)* back) {
+            _front = front;
+            _back = back;
+        }
+
+        @property bool empty() const { 
+            return (_front is null);
+        }
+
+        @property ref const(T) front() const 
+        in {
+            assert (_front !is null);
+        }
+        body {
+            return (_front.value);
+        }
+
+        void popFront() 
+        in {
+            assert (_front !is null);
+        }
+        body {
+            if (_front is _back)
+                _front = _back = null;
+            else
+                _front = _front.next;
+        }
+
+        @property ConstRange save() { return this; }
+
+        public @property const(Node)* frontNode() { 
+            return _front; 
+        }
+
+    private:
+        const(Node)* _front;
+        const(Node)* _back;
     }
 
     static struct Range {
@@ -444,6 +495,7 @@ public:
     }
 
     Range opSlice() { return Range(_front, _back); }
+    ConstRange opSlice() const { return ConstRange(_front, _back); }
 
     Node* insertBack(T value) 
     out(result) {
@@ -499,7 +551,7 @@ public:
         return _front.value;
     }
 
-    @property Node* frontNode() { return _front; }
+    @property inout(Node*) frontNode() inout { return _front; }
 
     ref inout(T) back() inout
     in {
@@ -509,7 +561,7 @@ public:
         return _back.value;
     }
 
-    @property Node* backNode() { return _back; }
+    @property inout(Node*) backNode() inout { return _back; }
 
     @property size_t length() const {
         return _size;
@@ -687,4 +739,82 @@ unittest {
 
     assert (count == 0, 
         "iterating over an empty range should never hit the loop body.");
+}
+
+// ----------------------------------------------------------------------------
+// Set
+// ----------------------------------------------------------------------------
+
+/**
+ * 
+ */
+struct Set (T) {
+    public this(Stuff)(Stuff stuff) 
+        if (isInputRange!Stuff && 
+            isImplicitlyConvertible!(ElementType!Stuff, T)) {
+        foreach(s; stuff) 
+            insert(s);
+    } 
+
+    public this(this) {
+        _payload = _payload.dup;
+    }
+
+    @property size_t length() const {
+        return _payload.length;
+    }
+
+    /**
+     * Inserts a new value into the set.
+     * Params:
+     *   value = The value to insert into the set.
+     *
+     * Returns:
+     *   Returns true if the value was inserted, or false if the value 
+     *   already existed in the set.
+     */
+    public bool insert(T value) {
+        int n = _payload[value]++;
+        return (n == 0); 
+    }
+
+    public bool contains(T value) const {
+        auto p = (value in _payload);
+        return (p !is null);
+    }
+
+    public int opApply(int delegate(ref T) dg) {
+        int rval = 0;
+        auto values = _payload.keys;
+        for(int i = 0; (i < values.length) && (rval != 0); ++i)
+            rval = dg(values[i]);
+        return rval;
+    }
+
+    private T[int] _payload;
+}
+
+unittest {
+    writeln("Set: Construction from a range.");
+}
+
+unittest {
+    writeln("Set: Unique values are added.");
+    Set!int s;
+    foreach(n; 0 .. 5) {
+        assert (s.insert(n), "Inserting a unique item should return true.");
+    }
+
+    assert (s.length == 5, "Expected length of 5, got: " ~to!string(s.length));
+    foreach(n; 0 .. 5) {
+        assert (s.contains(n), "Expected value " ~ to!string(n) ~ " missing.");
+    }
+}
+
+unittest {
+    writeln("Set: Duplicate values are not added.");
+    Set!int s;
+    assert (s.insert(1), "Expected insert to return true.");
+    assert (!s.insert(1), "Expected duplicate insert to return false");
+    assert (s.length == 1, "Expected length of 1, got " ~ to!string(s.length));
 }

@@ -3,7 +3,65 @@ module spiderpig.traits;
 import std.range, std.traits, std.typecons;
 import spiderpig.container;
 
-//final struct VecS {}
+// ----------------------------------------------------------------------------
+// Graph concepts
+// ----------------------------------------------------------------------------
+
+template isGraph (G) {
+    enum bool isGraph = is(typeof(
+    (inout int = 0) {
+        G g = G.init;         // We can create a graph
+        G.VertexDescriptor v; // T defines a vertex descriptor type
+        G.EdgeDescriptor e;   // T defines an eddge descriptor type
+    }));
+}
+
+template isIncidenceGraph (G) {
+    enum bool isIncidenceGraph = isGraph!G && is(typeof(
+    (inout int = 0) {
+        G g;
+        G.VertexDescriptor v;
+        size_t x = g.outDegree(v);                // Can query vertex degree
+        foreach(e; g.outEdges(v)) {               // Can enumerate vertex edges
+            G.EdgeDescriptor e2 = e;              // Edge values are EdgeDescriptors
+            G.VertexDescriptor src = g.source(e); // Can query edge source
+            G.VertexDescriptor dst = g.target(e); // Can query edge target
+        }
+    }));   
+}
+
+// ----------------------------------------------------------------------------
+// Property map 
+// ----------------------------------------------------------------------------
+
+template isPropertyMap (T, IndexT, ValueT) {
+    enum bool isPropertyMap = is(typeof(
+    (ref T t, IndexT idx) {
+        ValueT v = t[idx]; // can query
+        t[idx] = v;        // can set
+    }));
+}
+
+// ----------------------------------------------------------------------------
+// Queue concept
+// ----------------------------------------------------------------------------
+
+/**
+ * 
+ */
+template isQueue(T, ValueT) {
+    enum bool isQueue = is(typeof(
+    (ref T t) {
+        bool e = t.empty;
+        ValueT v = t.front;
+        t.push(v); 
+        t.pop();
+    }));
+}
+
+// ----------------------------------------------------------------------------
+// Container specifiers
+// ----------------------------------------------------------------------------
 
 final struct VecS {
     alias IndexType = size_t;
@@ -19,7 +77,7 @@ final struct VecS {
             _store.erase(index);
         }
 
-        auto indexRange() {
+        auto indexRange() const {
             return iota(0, _store.length);
         }
 
@@ -68,14 +126,17 @@ final struct ListS {
             _store.remove(range.frontNode);
         }
 
-        auto indexRange() {
+        auto indexRange() const {
             static struct IndexRange {
                 alias Node = List!(ValueType).Node;
 
-                this(Node* front, Node* back) { _front = front; _back = back; }
+                this(const(Node)* front, const(Node)* back) { 
+                    _front = front; 
+                    _back = back; 
+                }
 
                 @property bool empty() const { return _front is null; }
-                @property void* front() { return cast(void*) _front; }
+                @property void* front() const { return cast(void*) _front; }
                 void popFront() { 
                     if (_front is _back) 
                         _front = _back = null;
@@ -84,8 +145,8 @@ final struct ListS {
                 }
 
             private:
-                Node* _front;
-                Node* _back;
+                const(Node)* _front;
+                const(Node)* _back;
             }
 
             static assert(isInputRange!IndexRange);
