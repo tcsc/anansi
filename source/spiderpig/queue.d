@@ -86,9 +86,6 @@ version (unittest) {
 unittest {
     writeln("FifoQueue: simple add & remove");
     auto q = FifoQueue!int();
-
-    writeln("q: ", q);
-
     foreach(n; 1 .. 11) {
         q.push(n);
         assert (q.length == n, 

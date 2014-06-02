@@ -673,7 +673,7 @@ unittest {
 }
 
 unittest {
-    writeln("AdjacencyList: Removing edges woks as expected.");
+    writeln("AdjacencyList: Removing edges works as expected.");
     foreach(VertexStorage; TypeTuple!(VecS, ListS)) {
         foreach(EdgeStorage; TypeTuple!(VecS, ListS)) {
             foreach(Directionality; TypeTuple!(DirectedS, UndirectedS, BidirectionalS)) {

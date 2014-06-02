@@ -3,8 +3,12 @@
  */
 module spiderpig.bfs;
 
-import spiderpig.queue, spiderpig.traits;
-import std.stdio;
+import spiderpig.container, 
+       spiderpig.queue, 
+       spiderpig.traits;
+import std.algorithm, 
+       std.array, 
+       std.stdio;
 
 /**
  * Compile time test to check if a given type can be considered a BFS visitor
@@ -136,73 +140,230 @@ version (unittest) {
         }
         return -1;
     }
+
+    bool all(RangeT, DelegateT)(RangeT range, DelegateT d = DelegateT.init) {
+        foreach (x; range) {
+            if (!d(x)) return false;
+        }
+        return true;
+    }
+
+    struct TestGraph(GraphT) {
+        GraphT graph;
+        GraphT.VertexDescriptor[char] vertices;
+    };
+
+    TestGraph!GraphT MakeTestGraph(GraphT)() {
+        GraphT g;
+        auto a = g.addVertex('a');
+        auto b = g.addVertex('b');
+        auto c = g.addVertex('c');
+        auto d = g.addVertex('d');
+        auto e = g.addVertex('e');
+        auto f = g.addVertex('f');
+
+        // *----------------*
+        // |                |
+        // |     /-> b ->\ /
+        // *--> a         e -> f
+        //       \-> c ->/
+        //            \-> d
+
+        g.addEdge(a, b); g.addEdge(b, e);
+        g.addEdge(a, c); g.addEdge(c, e);
+        g.addEdge(e, f);
+        g.addEdge(e, a);
+        g.addEdge(c, d);
+
+        GraphT.VertexDescriptor[char] vertices;
+        vertices = reduce!((acc, v) { acc[g[v]] = v; return acc; })(
+            vertices, [a, b, c, d, e, f]);
+
+        return TestGraph!GraphT(g, vertices);
+    }
+
+    alias G = AdjacencyList!(VecS, VecS, DirectedS, char, string); 
+    alias Vertex = G.VertexDescriptor;
+    alias Edge = G.EdgeDescriptor;
 }
 
 unittest {
-    writeln("BFS: Vertex examination order.");
-    alias G = AdjacencyList!(VecS, VecS, DirectedS, char, string); 
-    alias Vertex = G.VertexDescriptor;
-    Vertex[] examiningOrder;
+    writeln("BFS: Vertices examined exactly once, and siblings examined " ~
+            "before children.");
 
     static struct Visitor {
-        this(ref Vertex[] examinationOrder) {
+        this(ref G graph, ref char[] examinationOrder) {
+            _graph = &graph;
             _vertexExaminationOrder = &examinationOrder;
         }
 
         void examineVertex(ref const(G) g, Vertex v) {
-            (*_vertexExaminationOrder) ~= v;
+            (*_vertexExaminationOrder) ~= (*_graph)[v];
         }
 
         NullVisitor!G impl;
         alias impl this;
-        Vertex[]* _vertexExaminationOrder;
+
+        G* _graph;
+        char[]* _vertexExaminationOrder;
     }
 
-    G g;
-    auto a = g.addVertex('a');
-    auto b = g.addVertex('b');
-    auto c = g.addVertex('c');
-    auto d = g.addVertex('d');
-    auto e = g.addVertex('e');
-    auto f = g.addVertex('f');
+    char[] examinationOrder;
+    Colour[Vertex] colourMap;
 
-    // *----------------*
-    // |                |
-    // |     /-> b ->\ /
-    // *--> a         e -> f
-    //       \-> c ->/
-    //            \-> d
+    auto testGraph = MakeTestGraph!G(); 
 
-    g.addEdge(a, b); g.addEdge(b, e);
-    g.addEdge(a, c); g.addEdge(c, e);
-    g.addEdge(e, f);
-    g.addEdge(e, a);
-    g.addEdge(c, d);
-
-    Colour[G.VertexDescriptor] colourMap;
-
-    BreadthFirstSearch(g,
-                       g.vertices().front, 
+    BreadthFirstSearch(testGraph.graph,
+                       testGraph.vertices['a'], 
                        colourMap, 
-                       Visitor(examiningOrder));
+                       Visitor(testGraph.graph, examinationOrder));
 
     // Assert that each vertex is examined, and examined exactly once
-    assert (examiningOrder.length == 6,
+    assert (examinationOrder.length == 6,
         "Expected 6 entries in examination order array, got " ~
-        to!string(examiningOrder.length));
+        to!string(examinationOrder.length));
 
-    assert (
-        all!(v => indexOf(examiningOrder, v) >= 0)([a, b, c, d, e, f]),
+    auto keyExists = delegate(char v) { return indexOf(examinationOrder, v) >= 0; };
+    
+    assert (all(testGraph.vertices.keys, keyExists),
         "Expected all vertices to appear in the examined vertex list");
 
     // Assert that the source vertex is examined
-    assert (indexOf(examiningOrder, a) == 0,
+    assert (indexOf(examinationOrder, 'a') == 0,
         "Expected Vertex A to be the first vertex examined.");
 
     // Assert that the vertices are enumerated breadth first
-    assert (indexOf(examiningOrder, c) < indexOf(examiningOrder, e), 
+    assert (indexOf(examinationOrder, 'c') < indexOf(examinationOrder, 'e'), 
         "Expected vertex C to appear before vertex E.");
  
-    assert (indexOf(examiningOrder, d) < indexOf(examiningOrder, f), 
+    assert (indexOf(examinationOrder, 'd') < indexOf(examinationOrder, 'f'), 
         "Expected vertex D to appear before vertex F.");
+}
+
+unittest {
+    writeln("BFS: Vertices should be discovered exactly once.");
+
+    static struct Visitor {
+        this(ref int[Vertex] discoveryCounts) {
+            _counts = &discoveryCounts;
+        }
+
+        void examineVertex(ref const(G) g, Vertex v) {
+            (*_counts)[v]++;
+        }
+
+        NullVisitor!G impl;
+        alias impl this;
+
+        G* _graph;
+        int[Vertex]* _counts;
+    }
+
+    int[Vertex] counts;
+    Colour[Vertex] colourMap;
+
+    auto testGraph = MakeTestGraph!G(); 
+
+    BreadthFirstSearch(testGraph.graph,
+                       testGraph.vertices['a'], 
+                       colourMap, 
+                       Visitor(counts));
+
+    // Assert that each vertex is discovered, and discovered exactly once
+    assert (counts.length == 6,
+        "Expected 6 entries in discovery count array, got " ~
+        to!string(counts.length));
+
+    auto pred = (Vertex v) { return (v in counts) !is null; };
+    assert (all(testGraph.vertices.values, pred),
+        "Every vertex must appear in the discovery count array");
+
+    assert (std.algorithm.all!("a == 1")(counts.values));
+}
+
+unittest {
+    writeln("BFS: Edges should be examined exactly once.");
+
+    static struct Visitor {
+        this(ref int[Edge] counts) {
+            _counts = &counts;
+        }
+
+        void examineEdge(ref const(G) g, Edge e) {
+            (*_counts)[e]++;
+        }
+
+        NullVisitor!G impl;
+        alias impl this;
+
+        G* _graph;
+        int[Edge]* _counts;
+    }
+
+    int[Edge] counts;
+    Colour[Vertex] colourMap;
+
+    auto testGraph = MakeTestGraph!G(); 
+
+    BreadthFirstSearch(testGraph.graph,
+                       testGraph.vertices['a'], 
+                       colourMap, 
+                       Visitor(counts));
+
+    auto edges = Set!Edge();
+    foreach (v; testGraph.graph.vertices)
+        edges.insert(testGraph.graph.outEdges(v));
+
+    // Assert that each edge is discovered, and discovered exactly once
+    assert (counts.length == edges.length,
+        "Expected " ~ to!string(edges.length) ~ 
+        " entries in discovery count array, got " ~ to!string(counts.length));
+
+    auto pred = (Edge e) { return (e in counts) !is null; };
+    assert (all(edges, pred),
+        "Every edge must appear in the discovery count array");
+
+    assert (std.algorithm.all!("a == 1")(counts.values));
+}
+
+unittest {
+    writeln("BFS: Vertices should be finished exactly once.");
+
+    static struct Visitor {
+        this(ref int[Vertex] finishCounts) {
+            _counts = &finishCounts;
+        }
+
+        void finishVertex(ref const(G) g, Vertex v) {
+            (*_counts)[v]++;
+        }
+
+        NullVisitor!G impl;
+        alias impl this;
+
+        G* _graph;
+        int[Vertex]* _counts;
+    }
+
+    int[Vertex] counts;
+    Colour[Vertex] colourMap;
+
+    auto testGraph = MakeTestGraph!G(); 
+
+    BreadthFirstSearch(testGraph.graph,
+                       testGraph.vertices['a'], 
+                       colourMap, 
+                       Visitor(counts));
+
+    // Assert that each vertex is discovered, and discovered exactly once
+    auto vertices = array(testGraph.graph.vertices);
+    assert (counts.length == vertices.length,
+        "Expected " ~ to!string(vertices.length) ~ 
+        " entries in edge discovery array, got " ~ to!string(counts.length));
+
+    auto pred = (Vertex v) { return (v in counts) !is null; };
+    assert (all(testGraph.vertices.values, pred),
+        "Every vertex must appear in the discovery count array");
+
+    assert (std.algorithm.all!("a == 1")(counts.values));
 }

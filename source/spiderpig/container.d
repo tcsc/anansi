@@ -186,14 +186,14 @@ public:
 }
 
 unittest {
-  writeln("Array: empty construction.");
+  writeln("Array: empty construction yields a valid Array.");
   Array!string s;
   assert(s.length == 0);
   assert(s.capacity >= 0);
 }
 
 unittest {
-  writeln("Array: construction from a Range.");
+  writeln("Array: construction from a Range yields a valid Array.");
   auto data = ["alpha", "beta", "delta", "gamma", "epsilon"];
   auto s = Array!string(data);
 
@@ -203,7 +203,7 @@ unittest {
 }
 
 unittest {
-  writeln("Array: insertion into empty Array");
+  writeln("Array: insertion into empty Array yields a valid 1-element array.");
   Array!string a;
   auto i = a.insert("hi", 0);
   assert (a.length == 1, "Incorrect length after insertion.");
@@ -778,6 +778,19 @@ struct Set (T) {
         return (n == 0); 
     }
 
+    /**
+     * Inserts a range of elements into the set.
+     *
+     * Params:
+     *   stuff = The range of items to insert into the set. 
+     */
+    public void insert(Stuff)(Stuff stuff)
+        if (isInputRange!Stuff && 
+            isImplicitlyConvertible!(ElementType!Stuff, T)) {
+        foreach (s; stuff) 
+            insert(s);
+    }
+
     public bool contains(T value) const {
         auto p = (value in _payload);
         return (p !is null);
@@ -791,7 +804,7 @@ struct Set (T) {
         return rval;
     }
 
-    private T[int] _payload;
+    private int[T] _payload;
 }
 
 unittest {
