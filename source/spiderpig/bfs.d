@@ -35,8 +35,8 @@ struct NullVisitor(GraphT) {
     void examineEdge(ref const(GraphT) g, Edge e) {}
     void treeEdge(ref const(GraphT) g, Edge e) {}
     void nonTreeEdge(ref const(GraphT) g, Edge e) {}
-    void greyTarget(ref const(GraphT) g, Vertex e) {}
-    void blackTarget(ref const(GraphT) g, Vertex e) {}
+    void greyTarget(ref const(GraphT) g, Edge e) {}
+    void blackTarget(ref const(GraphT) g, Edge e) {}
     void finishVertex(ref const(GraphT) g, Vertex e) {}
 }
 
@@ -103,16 +103,16 @@ template BreadthFirstVisit(GraphT,
             foreach (e; graph.outEdges(u)) {      visitor.examineEdge(graph, e);
                 auto v = graph.target(e);
                 auto c = colour[v];
-                if (c == Colour.White) {
+                if (c == Colour.White) {          visitor.treeEdge(graph, e);
                     colour[v] = Colour.Grey;
                     queue.push(v);                visitor.discoverVertex(graph, v);
                 }
                 else {                            visitor.nonTreeEdge(graph, e);
                     switch (c) {
-                        case Colour.Grey:         visitor.greyTarget(graph, v);
+                        case Colour.Grey:         visitor.greyTarget(graph, e);
                             break;
 
-                        case Colour.Black:        visitor.blackTarget(graph, v);
+                        case Colour.Black:        visitor.blackTarget(graph, e);
                             break;
 
                         default:
@@ -282,7 +282,7 @@ unittest {
 }
 
 unittest {
-    writeln("BFS: Edges should be examined exactly once.");
+    writeln("BFS: Edges in a directed graph should be examined exactly once.");
 
     static struct Visitor {
         this(ref int[Edge] counts) {
@@ -296,7 +296,6 @@ unittest {
         NullVisitor!G impl;
         alias impl this;
 
-        G* _graph;
         int[Edge]* _counts;
     }
 
@@ -324,6 +323,115 @@ unittest {
         "Every edge must appear in the discovery count array");
 
     assert (std.algorithm.all!("a == 1")(counts.values));
+}
+
+unittest {
+    writeln("BFS: Edges in an undirected graph should be examined at least once.");
+    alias UndirectedGraph = AdjacencyList!(VecS, VecS, UndirectedS, char, string); 
+    alias UEdge = UndirectedGraph.EdgeDescriptor;
+
+    static struct Visitor {
+        this(ref int[UEdge] counts) {
+            _counts = &counts;
+        }
+
+        void examineEdge(ref const(UndirectedGraph) g, UEdge e) {
+            (*_counts)[e]++;
+        }
+
+        NullVisitor!UndirectedGraph impl;
+        alias impl this;
+
+        int[UEdge]* _counts;
+    }
+
+    auto testGraph = MakeTestGraph!UndirectedGraph(); 
+
+    int[UEdge] counts;
+    Colour[Vertex] colourMap;
+
+    BreadthFirstSearch(testGraph.graph,
+                       testGraph.vertices['a'], 
+                       colourMap, 
+                       Visitor(counts));
+
+    auto edges = Set!UEdge();
+    foreach (v; testGraph.graph.vertices)
+        edges.insert(testGraph.graph.outEdges(v));
+
+    // Assert that each edge is discovered at least once
+    assert (counts.length == edges.length,
+        "Expected " ~ to!string(edges.length) ~ 
+        " entries in discovery count array, got " ~ to!string(counts.length));
+
+    auto pred = (UEdge e) { return (e in counts) !is null; };
+    assert (all(edges, pred),
+        "Every edge must appear in the discovery count array");
+
+    assert (std.algorithm.all!("a > 0")(counts.values));
+}
+
+unittest {
+    writeln("BFS: Tree & non-tree vertices should be identified");
+
+    static struct Visitor {
+        this(Vertex black, Vertex grey, 
+             ref int treeCount,
+             ref int nonTreeCount) {
+            _black = black;
+            _grey = grey;
+            _treeEdgeCount = &treeCount;
+            _nonTreeCount = &nonTreeCount;
+        }
+
+        void treeEdge(ref const(G) g, Edge e) {
+            auto t = g.target(e);
+            (*_treeEdgeCount)++;
+        }
+
+
+        void nonTreeEdge(ref const(G) g, Edge e) {
+            auto t = g.target(e);
+            assert (t == _black || t == _grey);
+            (*_nonTreeCount)++;
+        }
+
+        void greyTarget(ref const(G) g, Edge e) {
+            assert (g.target(e) == _grey);
+        }
+
+        void blackTarget(ref const(G) g, Edge e) {
+            assert (g.target(e) == _black);
+        }
+
+        NullVisitor!G impl;
+        alias impl this;
+
+        Vertex _black;
+        Vertex _grey;
+        int* _treeEdgeCount;
+        int* _nonTreeCount;
+    }
+
+    int treeCount = 0; int nonTreeCount = 0;
+    Colour[Vertex] colourMap;
+
+    auto testGraph = MakeTestGraph!G(); 
+
+    BreadthFirstSearch(testGraph.graph,
+                       testGraph.vertices['a'], 
+                       colourMap, 
+                       Visitor(testGraph.vertices['a'],
+                               testGraph.vertices['e'],
+                               treeCount,
+                               nonTreeCount));
+
+    assert (treeCount == 5,
+        "Expected tree hit count of 5, got " ~ to!string(nonTreeCount));
+
+    assert (nonTreeCount == 2, 
+        "Expected non-tree hit count of 2, got " ~ to!string(nonTreeCount));
+
 }
 
 unittest {
