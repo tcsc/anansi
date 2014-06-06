@@ -1,4 +1,4 @@
-module spiderpig.queue;
+module spiderpig.container.queue;
 import std.algorithm, std.conv;
 
 /**

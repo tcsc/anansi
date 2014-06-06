@@ -1,11 +1,11 @@
 /**
  * Definitions for running a breadth-first search over a graph
  */
-module spiderpig.bfs;
+module spiderpig.algorithms.bfs;
 
 import spiderpig.container, 
-       spiderpig.queue, 
-       spiderpig.traits;
+       spiderpig.traits,
+       spiderpig.types;
 import std.algorithm, 
        std.array, 
        std.stdio;
@@ -40,13 +40,11 @@ struct NullVisitor(GraphT) {
     void finishVertex(ref const(GraphT) g, Vertex e) {}
 }
 
-enum Colour { White, Grey, Black };
-
 /**
  * A generic breadth-first search algorithm that can be customised using a
  * visitor.
  */
-template BreadthFirstSearch(GraphT, 
+template breadthFirstSearch(GraphT, 
                             VertexDescriptorT,
                             VisitorT = NullVisitor!GraphT,
                             ColourMapT = Colour[VertexDescriptorT], 
@@ -59,7 +57,7 @@ template BreadthFirstSearch(GraphT,
     static assert (isQueue!(QueueT, GraphT.VertexDescriptor));
 
 
-    void BreadthFirstSearch(ref const(GraphT) graph,
+    void breadthFirstSearch(ref const(GraphT) graph,
                             VertexDescriptorT source,
                             ref ColourMapT colourMap, 
                             VisitorT visitor = VisitorT.init,
@@ -213,7 +211,7 @@ unittest {
 
     auto testGraph = MakeTestGraph!G(); 
 
-    BreadthFirstSearch(testGraph.graph,
+    breadthFirstSearch(testGraph.graph,
                        testGraph.vertices['a'], 
                        colourMap, 
                        Visitor(testGraph.graph, examinationOrder));
@@ -264,7 +262,7 @@ unittest {
 
     auto testGraph = MakeTestGraph!G(); 
 
-    BreadthFirstSearch(testGraph.graph,
+    breadthFirstSearch(testGraph.graph,
                        testGraph.vertices['a'], 
                        colourMap, 
                        Visitor(counts));
@@ -304,7 +302,7 @@ unittest {
 
     auto testGraph = MakeTestGraph!G(); 
 
-    BreadthFirstSearch(testGraph.graph,
+    breadthFirstSearch(testGraph.graph,
                        testGraph.vertices['a'], 
                        colourMap, 
                        Visitor(counts));
@@ -350,7 +348,7 @@ unittest {
     int[UEdge] counts;
     Colour[Vertex] colourMap;
 
-    BreadthFirstSearch(testGraph.graph,
+    breadthFirstSearch(testGraph.graph,
                        testGraph.vertices['a'], 
                        colourMap, 
                        Visitor(counts));
@@ -418,7 +416,7 @@ unittest {
 
     auto testGraph = MakeTestGraph!G(); 
 
-    BreadthFirstSearch(testGraph.graph,
+    breadthFirstSearch(testGraph.graph,
                        testGraph.vertices['a'], 
                        colourMap, 
                        Visitor(testGraph.vertices['a'],
@@ -458,7 +456,7 @@ unittest {
 
     auto testGraph = MakeTestGraph!G(); 
 
-    BreadthFirstSearch(testGraph.graph,
+    breadthFirstSearch(testGraph.graph,
                        testGraph.vertices['a'], 
                        colourMap, 
                        Visitor(counts));
