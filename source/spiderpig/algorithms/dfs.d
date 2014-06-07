@@ -61,7 +61,7 @@ template depthFirstSearch(GraphT,
 
         foreach(v; graph.vertices()) {
             if (vertexColourMap[v] == Colour.White) {
-                depthFirstVisit(graph, root, vertexColourMap, visitor);
+                depthFirstVisit(graph, v, vertexColourMap, visitor);
             }
         }
     }
@@ -162,32 +162,33 @@ version (unittest) {
     };
 
     private TestGraph!GraphT MakeTestGraph(GraphT)() {
-        GraphT g;
-        auto a = g.addVertex('a');
-        auto b = g.addVertex('b');
-        auto c = g.addVertex('c');
-        auto d = g.addVertex('d');
-        auto e = g.addVertex('e');
-        auto f = g.addVertex('f');
+        GraphT graph;
+        auto a = graph.addVertex('a');
+        auto b = graph.addVertex('b');
+        auto c = graph.addVertex('c');
+        auto d = graph.addVertex('d');
+        auto e = graph.addVertex('e');
+        auto f = graph.addVertex('f');
+        auto g = graph.addVertex('g');
 
         // *----------------*
         // |                |
         // |     /-> b ->\ /
-        // *--> a         e -> f
+        // *--> a         e -> f  g
         //       \-> c ->/
         //            \-> d
 
-        g.addEdge(a, b, "a -> b"); g.addEdge(b, e, "b -> e");
-        g.addEdge(a, c, "a -> c"); g.addEdge(c, e, "c -> e");
-        g.addEdge(e, f, "e -> f");
-        g.addEdge(e, a, "e -> a");
-        g.addEdge(c, d, "c -> d");
+        graph.addEdge(a, b, "a -> b"); graph.addEdge(b, e, "b -> e");
+        graph.addEdge(a, c, "a -> c"); graph.addEdge(c, e, "c -> e");
+        graph.addEdge(e, f, "e -> f");
+        graph.addEdge(e, a, "e -> a");
+        graph.addEdge(c, d, "c -> d");
 
         GraphT.VertexDescriptor[char] vertices;
-        vertices = reduce!((acc, v) { acc[g[v]] = v; return acc; })(
-            vertices, [a, b, c, d, e, f]);
+        vertices = reduce!((acc, v) { acc[graph[v]] = v; return acc; })(
+            vertices, [a, b, c, d, e, f, g]);
 
-        return TestGraph!GraphT(g, vertices);
+        return TestGraph!GraphT(graph, vertices);
     }
 
     private alias G = AdjacencyList!(VecS, VecS, DirectedS, char, string); 
@@ -226,14 +227,15 @@ unittest {
                      Visitor(testGraph.graph, discoveryOrder));
 
     // Assert that each vertex is examined, and examined exactly once
-    assert (discoveryOrder.length == 6,
-        "Expected 6 entries in discovery order array, got " ~
+    assert (discoveryOrder.length == 7,
+        "Expected 7 entries in discovery order array, got " ~
         to!string(discoveryOrder.length));
 
     auto keyExists = delegate(char v) { return indexOf(discoveryOrder, v) >= 0; };
     
     assert (all(testGraph.vertices.keys, keyExists),
-        "Expected all vertices to appear in the discovery order list");
+        "Expected all vertices to appear in the discovery order list: " ~
+        discoveryOrder);
 
     // Assert that the source vertex is examined
     assert (indexOf(discoveryOrder, 'a') == 0,
@@ -245,5 +247,4 @@ unittest {
  
     assert (indexOf(discoveryOrder, 'f') < indexOf(discoveryOrder, 'd'), 
         "Expected vertex F to appear before vertex D.");
-
 }
