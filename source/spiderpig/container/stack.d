@@ -88,7 +88,7 @@ unittest {
 }
 
 unittest {
-    writeln("Stack: Popping an item from a stack should increase its length.");
+    writeln("Stack: Popping an item from a stack should decrease its length.");
     auto s = Stack!int([1, 2, 3, 4, 5]);
     auto n = s.length;
     s.pop();
