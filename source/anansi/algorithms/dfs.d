@@ -6,6 +6,7 @@ module anansi.algorithms.dfs;
 import std.exception;
 
 import anansi.types,
+       anansi.traits,
        anansi.container.stack;
 
 /**
@@ -104,10 +105,12 @@ template depthFirstSearch(GraphT,
             visitor.initVertex(graph, v);
         }
 
+        visitor.startVertex(graph, root);
         depthFirstVisit(graph, root, colourMap, visitor);
 
         foreach(v; graph.vertices()) {
             if (colourMap[v] == Colour.White) {
+                visitor.startVertex(graph, root);
                 depthFirstVisit(graph, v, colourMap, visitor);
             }
         }

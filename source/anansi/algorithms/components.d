@@ -1,39 +1,60 @@
 module anansi.algorithms.components;
 
+import std.stdio;
+
 import anansi.algorithms.dfs,
-       anansi.traits;
+       anansi.traits,
+       anansi.types;
 
 template connectedComponents(GraphT, ComponentMapT) {
     static assert (isGraph!GraphT);
     static assert (isPropertyMap!(ComponentMapT, 
         GraphT.VertexDescriptor, size_t));
 
-    alias Vertex = GraphT.VertexDescriptor;
-    alias Edge = GraphT.EdgeDescriptor;
 
-    size_t connectedComponents(ref const(GraphT) graph) {
+    size_t connectedComponents(ref const(GraphT) g, ref ComponentMapT components) {
+        alias Vertex = GraphT.VertexDescriptor;
+        alias Edge = GraphT.EdgeDescriptor;
+
         static struct ComponentRecorder {
             this(ref size_t count, ref ComponentMapT componentMap) {
-                _count = &count;
+                _group = &count;
                 _components = &componentMap;
             }
 
             void startVertex(ref const(GraphT), Vertex v) {
-                if( (*_count) == size_t.max )
-                    (*_count) == 0;
+                if( (*_group) == size_t.max )
+                    (*_group) = 0;
                 else
-                    (*_count)++;
+                    (*_group)++;
             }
 
             void discoverVertex(ref const(GraphT), Vertex v) {
-                (*_components)[v] = (*_count);
+                (*_components)[v] = (*_group);
             }
 
-            private size_t* _count; 
+            private size_t* _group; 
             private ComponentMapT* _components;
 
             NullVisitor!GraphT impl;
             alias impl this;
         } 
+
+        if( g.vertices.empty )
+            return 0;
+
+        static if (is(Vertex == int)) {
+            writeln ("Using array");
+            auto colourMap = new Colour[g.vetexCount];
+        }
+        else {
+            writeln ("Using map");
+            Colour[Vertex] colourMap;
+        }
+
+        size_t count = size_t.max;
+        depthFirstSearch(g, g.vertices[0], colourMap, 
+                         ComponentRecorder(count, components));
+        return count+1;
     }
 }

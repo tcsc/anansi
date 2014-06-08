@@ -1,0 +1,9 @@
+{
+	"name": "connected components",
+	"description": "An example showing how to use the anansi connected components algorithm.",
+	"license": "BSL-1.0",
+	"authors": ["Trent Clarke"],
+	"dependencies": {
+		"anansi": {"version": "~master", "path": "../../"}
+	},
+}
