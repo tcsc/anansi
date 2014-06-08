@@ -20,66 +20,141 @@ template isDfsVisitor (V) {
 
 
 /**
- * A default implementation of the depth-first-search visitor concept that 
- * more specialised visitors can delegate the bits that they don't care about
- * to.
+ * A default implementation of the depth-first-search visitor concept. More 
+ * specialised visitors can delegate the bits that they don't care about
+ * to an instance of NullVisitor without having to re-implement them. 
+ *
+ * Also servers as a handy point for documenting the visitor interface.
  */
-struct NullVisitor(GraphT) {
+struct NullVisitor(GraphT) if (isGraph!GraphT) {
+    /// A vertex in a GraphT
     alias Vertex = GraphT.VertexDescriptor;
+
+    /// An edge in a GraphT
     alias Edge = GraphT.EdgeDescriptor;
 
+    /// Called when a vertex is set to its initial state, before the search.
     void initVertex(ref const(GraphT) g, Vertex v) {};
+
+    /// Called when a vertex is identified as the root of a depth-first spanning 
+    /// tree
     void startVertex(ref const(GraphT) g, Vertex v) {};
+
+    /// Called when a vertex is first encountered during the search.
     void discoverVertex(ref const(GraphT) g, Vertex v) {};
+
+    /// Called when an edge is being expanded.
     void examineEdge(ref const(GraphT) g, Edge e) {};
+
+    /// Called when an edge has been identified as part of the current 
+    /// spanning tree.
     void treeEdge(ref const(GraphT) g, Edge e) {};
+
+    /// Called when an edge has been identified as part of a cycle
     void backEdge(ref const(GraphT) g, Edge e) {};
+
+    /// Called when an edge crosses to a pre-existing spanning tree
     void forwardOrCrossEdge(ref const(GraphT) g, Edge e) {};
+
+    /// Called whan all of the adjacent nodes of a vertex have been examined.
     void finishVertex(ref const(GraphT) g, Vertex e) {};
 }
 
+/**
+ * Performs a depth-first traversal of the graph, which can be customised
+ * using a visitor object. Note that disconnected graphs will still be 
+ * entirely traversed - this function will walk the spanning tree of each  
+ * disconnected component (in random order). 
+ *
+ * Params:
+ *    GraphT = The type of the graph object to traverse. Must model the 
+ *             incidence graph concept.
+ *    VertexDescriptorT = The descriptor type for vertices in a GraphT.
+ *    VisitorT = The visitor type.
+ *    ColourMapT = The type of the property map that will be used to control 
+ *                 the graph traversal. Must model a property map that stores 
+ *                 Colours keyed by a VertexDescriptorT. 
+ */
 template depthFirstSearch(GraphT, 
                           VertexDescriptorT,
                           VisitorT = NullVisitor!GraphT,
-                          VertexColourMapT = Colour[VertexDescriptorT]) {
+                          ColourMapT = Colour[VertexDescriptorT]) {
 
     static assert (isIncidenceGraph!GraphT);
     static assert (is(VertexDescriptorT == GraphT.VertexDescriptor));
-    static assert (isPropertyMap!(VertexColourMapT, GraphT.VertexDescriptor, Colour));
+    static assert (isPropertyMap!(ColourMapT, GraphT.VertexDescriptor, Colour));
     static assert (isDfsVisitor!VisitorT);
 
+    /**
+     * Params:
+     *   graph = The graph object to traverse.
+     *   root = The vertex to serve as the starting point.
+     *   colourMap = The colour map used to control the expansion of edges
+     *               and verices in the graph. This will be totally re-
+     *               initialised before the traversal begins. 
+     *   visitor = A visitor object that will be notified of various events 
+     *             during the traversal. 
+     */
     void depthFirstSearch(ref const(GraphT) graph,
                           VertexDescriptorT root,
-                          ref VertexColourMapT vertexColourMap,
+                          ref ColourMapT colourMap,
                           VisitorT visitor = VisitorT.init) {
         foreach(v; graph.vertices()) {
-            vertexColourMap[v] = Colour.White;
+            colourMap[v] = Colour.White;
             visitor.initVertex(graph, v);
         }
 
-        depthFirstVisit(graph, root, vertexColourMap, visitor);
+        depthFirstVisit(graph, root, colourMap, visitor);
 
         foreach(v; graph.vertices()) {
-            if (vertexColourMap[v] == Colour.White) {
-                depthFirstVisit(graph, v, vertexColourMap, visitor);
+            if (colourMap[v] == Colour.White) {
+                depthFirstVisit(graph, v, colourMap, visitor);
             }
         }
     }
 }
 
+/**
+ * Performs a depth-first traversal of the graph, which can be customised
+ * using a visitor object. The main difference between this function and 
+ * depthFirstSearch is that depthFirstSearch will initialise the 
+ * supplied colour map, but depthFirstVisit will use it as-is. 
+ *
+ * Use this function if you need to efficiently make multiple passes over 
+ * non-overlappng parts of the same graph, or depthFirstSearch if you just
+ * want to walk over the whole thing. 
+ *
+ * Params:
+ *    GraphT = The type of the graph object to traverse. Must model the 
+ *             incidence graph concept.
+ *    VertexDescriptorT = The descriptor type for vertices in a GraphT.
+ *    VisitorT = The visitor type.
+ *    ColourMapT = The type of the property map that will be used to control 
+ *                 the graph traversal. Must model a property map that stores 
+ *                 Colours keyed by a VertexDescriptorT. 
+ */
 template depthFirstVisit(GraphT,
                          VertexDescriptorT,
                          VisitorT = NullVisitor!GraphT,
-                         VertexColourMapT = Colour[VertexDescriptorT]) {
+                         ColourMapT = Colour[VertexDescriptorT]) {
 
     static assert (isIncidenceGraph!GraphT);
     static assert (is(VertexDescriptorT == GraphT.VertexDescriptor));
-    static assert (isPropertyMap!(VertexColourMapT, GraphT.VertexDescriptor, Colour));
+    static assert (isPropertyMap!(ColourMapT, GraphT.VertexDescriptor, Colour));
     static assert (isDfsVisitor!VisitorT);
 
+    /**
+     * Params:
+     *   graph = The graph object to traverse.
+     *   root = The vertex to serve as the starting point.
+     *   colourMap = The colour map used to control the expansion of edges
+     *               and verices in the graph.
+     *   visitor = A visitor object that will be notified of various events 
+     *             during the traversal. 
+     */
     void depthFirstVisit(ref const(GraphT) graph,
                          VertexDescriptorT root,
-                         ref VertexColourMapT vertexColourMap,
+                         ref ColourMapT colourMap,
                          VisitorT visitor = VisitorT.init) {
         static struct VertexInfo {
             alias EdgeRange = typeof(graph.outEdges(VertexDescriptorT.init));
@@ -91,7 +166,7 @@ template depthFirstVisit(GraphT,
 
         // set up the initial point of departure
         stack.push(VertexInfo(root, graph.outEdges(root)));
-        vertexColourMap[root] = Colour.Grey; 
+        colourMap[root] = Colour.Grey; 
         visitor.discoverVertex(graph, root);
 
         while (!stack.empty) {
@@ -108,10 +183,10 @@ template depthFirstVisit(GraphT,
                 visitor.examineEdge(graph, e);
                 auto v = graph.target(e);
 
-                switch (vertexColourMap[v]) {
+                switch (colourMap[v]) {
                     case Colour.White:
                         visitor.treeEdge(graph, e);
-                        vertexColourMap[v] = Colour.Grey;
+                        colourMap[v] = Colour.Grey;
                         visitor.discoverVertex(graph, v);
                         stack.push(VertexInfo(u, edges));
 
@@ -132,7 +207,7 @@ template depthFirstVisit(GraphT,
                 }
             }
 
-            vertexColourMap[u] = Colour.Black;
+            colourMap[u] = Colour.Black;
             visitor.finishVertex(graph, u);
         }
     }
