@@ -1,4 +1,4 @@
-module spiderpig.container.array;
+module anansi.container.array;
 
 import std.algorithm, std.conv, std.range, std.stdio, std.traits;
 

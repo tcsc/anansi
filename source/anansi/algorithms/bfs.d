@@ -1,11 +1,11 @@
 /**
  * Definitions for running a breadth-first search over a graph
  */
-module spiderpig.algorithms.bfs;
+module anansi.algorithms.bfs;
 
-import spiderpig.container, 
-       spiderpig.traits,
-       spiderpig.types;
+import anansi.container, 
+       anansi.traits,
+       anansi.types;
 import std.algorithm, 
        std.array, 
        std.stdio;
@@ -130,7 +130,7 @@ template BreadthFirstVisit(GraphT,
 
 version (unittest) {
     import std.algorithm, std.conv, std.stdio;
-    import spiderpig.adjacencylist;
+    import anansi.adjacencylist;
 
     int indexOf(ValueT)(ValueT[] haystack, ValueT needle) {
         foreach(int n, v; haystack) {

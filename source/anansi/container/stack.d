@@ -1,4 +1,4 @@
-module spiderpig.container.stack;
+module anansi.container.stack;
 
 import std.range, std.traits;
 

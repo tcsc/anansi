@@ -1,12 +1,12 @@
 /**
  * Implements depth-first search over graphs.
  */
-module spiderpig.algorithms.dfs;
+module anansi.algorithms.dfs;
 
 import std.exception;
 
-import spiderpig.types,
-       spiderpig.container.stack;
+import anansi.types,
+       anansi.container.stack;
 
 /**
  * Compile time test to check if a given type can be considered a DFS visitor.
@@ -215,7 +215,7 @@ template depthFirstVisit(GraphT,
 
 version (unittest) {
     import std.algorithm, std.conv, std.stdio;
-    import spiderpig.adjacencylist, spiderpig.traits;
+    import anansi.adjacencylist, anansi.traits;
 
     int indexOf(ValueT)(ValueT[] haystack, ValueT needle) {
         foreach(int n, v; haystack) {

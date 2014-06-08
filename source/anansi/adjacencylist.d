@@ -1,4 +1,4 @@
-module spiderpig.adjacencylist;
+module anansi.adjacencylist;
 
 import std.algorithm,
        std.conv,
@@ -7,7 +7,7 @@ import std.algorithm,
        std.traits,
        std.typecons,
        std.typetuple;
-import spiderpig.container, spiderpig.traits;
+import anansi.container, anansi.traits;
 
 
 struct AdjacencyList (alias VertexStorage = VecS,

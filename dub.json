@@ -1,6 +1,6 @@
 {
-	"name": "spiderpig",
-	"description": "A graph handling ligrary in D.",
+	"name": "anansi",
+	"description": "A BGL-like graph handling ligrary in D.",
 	"license": "BSL-1.0",
 	"authors": ["Trent Clarke"],
 	"dependencies": {

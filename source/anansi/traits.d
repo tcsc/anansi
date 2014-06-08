@@ -1,7 +1,7 @@
-module spiderpig.traits;
+module anansi.traits;
 
 import std.range, std.traits, std.typecons;
-import spiderpig.container;
+import anansi.container;
 
 // ----------------------------------------------------------------------------
 // Graph concepts

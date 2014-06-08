@@ -1,10 +1,10 @@
-module spiderpig.container.list;
+module anansi.container.list;
 
 import std.algorithm, std.conv, std.range, std.stdio, std.traits;
 
 /**
  * A doubley-linked list with a deliberately leaky abstraction. This container 
- * is explicitly for use with the spiderpig graph classes. 
+ * is explicitly for use with the anansi graph classes. 
  */
 public struct List(T) {
 private:

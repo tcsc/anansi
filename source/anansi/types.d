@@ -1,3 +1,3 @@
-module spiderpig.types;
+module anansi.types;
 
 enum Colour { White, Grey, Black };
