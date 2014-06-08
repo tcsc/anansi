@@ -43,12 +43,12 @@ template connectedComponents(GraphT, ComponentMapT) {
         if( g.vertices.empty )
             return 0;
 
-        static if (is(Vertex == int)) {
-            writeln ("Using array");
-            auto colourMap = new Colour[g.vetexCount];
+        // Let's try and represent the colour map as an array if we can; it'll
+        // make map access stupidly fast. 
+        static if (is(Vertex == size_t)) {
+            auto colourMap = new Colour[g.vertexCount];
         }
         else {
-            writeln ("Using map");
             Colour[Vertex] colourMap;
         }
 
