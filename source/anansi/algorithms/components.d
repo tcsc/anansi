@@ -6,12 +6,29 @@ import anansi.algorithms.dfs,
        anansi.traits,
        anansi.types;
 
+/**
+ * Lists the connected components (a.k.a "islands") of an undirected graph.
+ *
+ * Params:
+ *   GraphT = The type of the graph object to examine. Must model the
+ *            incidence graph concept and be undirected.
+ *   ComponentMapT = The type of the component map to use. Must model a 
+ *                   property map of ints keyed by GraphT vertex 
+ *                   descriptor. 
+ */
 template connectedComponents(GraphT, ComponentMapT) {
     static assert (isGraph!GraphT);
-    static assert (isPropertyMap!(ComponentMapT, 
-        GraphT.VertexDescriptor, size_t));
+    static assert (GraphT.IsUndirected);
+    static assert (isPropertyMap!(ComponentMapT, GraphT.VertexDescriptor, size_t));
 
-
+    /**
+     * Params:
+     *   g = The graph to examine.
+     *   components = The component map to populate.
+     *
+     * Returns: 
+     *   Returns the number of components in the graph.
+     */
     size_t connectedComponents(ref const(GraphT) g, ref ComponentMapT components) {
         alias Vertex = GraphT.VertexDescriptor;
         alias Edge = GraphT.EdgeDescriptor;
