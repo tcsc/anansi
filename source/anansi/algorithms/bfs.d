@@ -21,9 +21,11 @@ template isBfsVisitor (V) {
 }
 
 /**
- * A default implementation of the breadth-first-search visitor concept that 
- * more specialised visitors can delegate the bits that they don't care about
- * to.
+ * A default implementation of the depth-first-search visitor concept. More 
+ * specialised visitors can delegate the bits that they don't care about
+ * to an instance of NullVisitor without having to re-implement them. 
+ *
+ * Also servers as a handy point for documenting the visitor interface.
  */
 struct NullVisitor(GraphT) {
     alias Vertex = GraphT.VertexDescriptor;
@@ -43,6 +45,19 @@ struct NullVisitor(GraphT) {
 /**
  * A generic breadth-first search algorithm that can be customised using a
  * visitor.
+ *
+ * Params:
+ *    GraphT = The type of the graph object to traverse. Must model the 
+ *             incidence graph concept.
+ *    VertexDescriptorT = The descriptor type for vertices in a GraphT.
+ *    VisitorT = The visitor type.
+ *    ColourMapT = The type of the property map that will be used to control 
+ *                 the graph traversal. Must model a property map that stores 
+ *                 Colours keyed by a VertexDescriptorT. 
+ *    QueueT = The type of the queue used to order the expansion of vertices. 
+ *             Changing the queue type can be used to customise the behaviour 
+ *             of the search (e.g. using a priority queue rather than the 
+ *             default FIFO queue.
  */
 template breadthFirstSearch(GraphT, 
                             VertexDescriptorT,
@@ -56,7 +71,17 @@ template breadthFirstSearch(GraphT,
     static assert (isBfsVisitor!VisitorT);
     static assert (isQueue!(QueueT, GraphT.VertexDescriptor));
 
-
+    /**
+     * Params:
+     *   graph = The graph object to traverse.
+     *   root = The vertex to serve as the starting point.
+     *   colourMap = The colour map used to control the expansion of edges
+     *               and verices in the graph. This will be totally re-
+     *               initialised before the traversal begins. 
+     *   visitor = A visitor object that will be notified of various events 
+     *             during the traversal. 
+     *   queue = The queue object used to order the expansion of vertices.
+     */
     void breadthFirstSearch(ref const(GraphT) graph,
                             VertexDescriptorT source,
                             ref ColourMapT colourMap, 
@@ -72,8 +97,21 @@ template breadthFirstSearch(GraphT,
 
 /**
  * Breadth-first traversal of the graph from a given starting point. This 
- * function does not reset the colourMap, so can be efficiently used repeatedly 
- * on subgraphs.
+ * function does not reset the colourMap, so can be efficiently used 
+ * repeatedly on components of the graph.
+ *
+ * Params:
+ *    GraphT = The type of the graph object to traverse. Must model the 
+ *             incidence graph concept.
+ *    VertexDescriptorT = The descriptor type for vertices in a GraphT.
+ *    VisitorT = The visitor type.
+ *    ColourMapT = The type of the property map that will be used to control 
+ *                 the graph traversal. Must model a property map that stores 
+ *                 Colours keyed by a VertexDescriptorT. 
+ *    QueueT = The type of the queue used to order the expansion of vertices. 
+ *             Changing the queue type can be used to customise the behaviour 
+ *             of the search (e.g. using a priority queue rather than the 
+ *             default FIFO queue. 
  */
 template BreadthFirstVisit(GraphT, 
                            VertexDescriptorT,
@@ -86,6 +124,16 @@ template BreadthFirstVisit(GraphT,
     static assert (isBfsVisitor!VisitorT);
     static assert (isQueue!(QueueT, GraphT.VertexDescriptor));
 
+    /**
+     * Params:
+     *   graph = The graph object to traverse.
+     *   source = The vertex to serve as the starting point.
+     *   colour = The colour map used to control the expansion of edges
+     *            and verices in the graph.
+     *   visitor = A visitor object that will be notified of various events 
+     *             during the traversal. 
+     *   queue = The queue object used to order the expansion of vertices.
+     */
     void BreadthFirstVisit(ref const(GraphT) graph,
                            VertexDescriptorT source,
                            ref ColourMapT colour, 

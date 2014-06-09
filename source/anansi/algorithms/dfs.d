@@ -217,8 +217,8 @@ template depthFirstVisit(GraphT,
 }
 
 version (unittest) {
-    import std.algorithm, std.conv, std.stdio;
-    import anansi.adjacencylist, anansi.traits;
+    import std.array, std.algorithm, std.conv, std.stdio;
+    import anansi.adjacencylist, anansi.traits, anansi.container.set;
 
     int indexOf(ValueT)(ValueT[] haystack, ValueT needle) {
         foreach(int n, v; haystack) {
@@ -325,4 +325,211 @@ unittest {
  
     assert (indexOf(discoveryOrder, 'f') < indexOf(discoveryOrder, 'd'), 
         "Expected vertex F to appear before vertex D.");
+}
+
+unittest {
+    writeln("DFS: Edges in a directed graph should be examined exactly once.");
+
+    static struct Visitor {
+        this(ref int[Edge] counts) {
+            _counts = &counts;
+        }
+
+        void examineEdge(ref const(G) g, Edge e) {
+            (*_counts)[e]++;
+        }
+
+        NullVisitor!G impl;
+        alias impl this;
+
+        int[Edge]* _counts;
+    }
+
+    int[Edge] counts;
+    Colour[Vertex] colourMap;
+
+    auto testGraph = MakeTestGraph!G(); 
+
+    depthFirstSearch(testGraph.graph,
+                     testGraph.vertices['a'], 
+                     colourMap, 
+                     Visitor(counts));
+
+    auto edges = Set!Edge();
+    foreach (v; testGraph.graph.vertices)
+        edges.insert(testGraph.graph.outEdges(v));
+
+    // Assert that each edge is discovered, and discovered exactly once
+    assert (counts.length == edges.length,
+        "Expected " ~ to!string(edges.length) ~ 
+        " entries in discovery count array, got " ~ to!string(counts.length));
+
+    auto pred = (Edge e) { return (e in counts) !is null; };
+    assert (all(edges, pred),
+        "Every edge must appear in the discovery count array");
+
+    assert (std.algorithm.all!("a == 1")(counts.values));
+}
+
+unittest {
+    writeln("DFS: Edges in an undirected graph should be examined at least once.");
+    alias UndirectedGraph = AdjacencyList!(VecS, VecS, UndirectedS, char, string); 
+    alias UEdge = UndirectedGraph.EdgeDescriptor;
+
+    static struct Visitor {
+        this(ref int[UEdge] counts) {
+            _counts = &counts;
+        }
+
+        void examineEdge(ref const(UndirectedGraph) g, UEdge e) {
+            (*_counts)[e]++;
+        }
+
+        NullVisitor!UndirectedGraph impl;
+        alias impl this;
+
+        int[UEdge]* _counts;
+    }
+
+    auto testGraph = MakeTestGraph!UndirectedGraph(); 
+
+    int[UEdge] counts;
+    Colour[Vertex] colourMap;
+
+    depthFirstSearch(testGraph.graph,
+                     testGraph.vertices['a'], 
+                     colourMap, 
+                     Visitor(counts));
+
+    auto edges = Set!UEdge();
+    foreach (v; testGraph.graph.vertices)
+        edges.insert(testGraph.graph.outEdges(v));
+
+    // Assert that each edge is discovered at least once
+    assert (counts.length == edges.length,
+        "Expected " ~ to!string(edges.length) ~ 
+        " entries in discovery count array, got " ~ to!string(counts.length));
+
+    auto pred = (UEdge e) { return (e in counts) !is null; };
+    assert (all(edges, pred),
+        "Every edge must appear in the examination count array");
+
+    assert (std.algorithm.all!("a > 0")(counts.values));
+}
+
+unittest {
+    writeln("DFS: Tree & non-tree vertices should be identified.");
+
+    static struct Visitor {
+        this(ref Edge[] treeEdges, 
+             ref Edge[] backEdges,
+             ref Edge[] forwardEdges) {
+            _treeEdges = &treeEdges;
+            _backEdges = &backEdges;
+            _forwardEdges = &forwardEdges;
+        }
+
+        /// Called when an edge has been identified as part of the current 
+        /// spanning tree.
+        void treeEdge(ref const(G) g, Edge e) {
+            (*_treeEdges) ~= e;        
+        };
+
+        /// Called when an edge has been identified as part of a cycle
+        void backEdge(ref const(G) g, Edge e) {
+            (*_backEdges) ~= e;
+        };
+
+        void forwardOrCrossEdge(ref const(G) g, Edge e) {
+            (*_forwardEdges) ~= e;
+        };
+
+        NullVisitor!G impl;
+        alias impl this;
+
+        private Edge[]* _treeEdges;
+        private Edge[]* _backEdges;
+        private Edge[]* _forwardEdges;
+    }
+
+    Edge[] treeEdges, backEdges, fwdEdges;
+    Colour[Vertex] colourMap;
+
+    auto testGraph = MakeTestGraph!G(); 
+    auto g = &testGraph.graph;
+
+    depthFirstSearch(testGraph.graph,
+                     testGraph.vertices['a'], 
+                     colourMap, 
+                     Visitor(treeEdges, backEdges, fwdEdges));
+
+    assert (treeEdges.length == 5, 
+        "Expected 5 tree edges, got " ~ to!string(treeEdges.length));
+
+    assert (backEdges.length == 1, 
+        "Expected 1 back edge, got " ~ to!string(backEdges.length));
+
+    auto backEdge = backEdges[0];
+    assert (g.source(backEdge) == testGraph.vertices['e'],
+        "Expected the source of the fwd edge to be vertex e, instead was " ~
+        (*g)[g.source(backEdge)]);
+
+    assert (g.target(backEdge) == testGraph.vertices['a'],
+        "Expected the target of the fwd edge to be vertex a, instead was " ~
+        (*g)[g.target(backEdge)]);
+
+    assert (fwdEdges.length == 1, 
+        "Expected 1 forward/cross edge, got " ~ to!string(fwdEdges.length));
+
+    auto fwdEdge = fwdEdges[0];
+    assert (g.source(fwdEdge) == testGraph.vertices['c'],
+        "Expected the source of the fwd edge to be vertex c, instead was " ~
+        (*g)[g.source(fwdEdge)]);
+
+    assert (g.target(fwdEdge) == testGraph.vertices['e'],
+        "Expected the target of the fwd edge to be vertex c, instead was " ~
+        (*g)[g.target(fwdEdge)]);
+}
+
+unittest {
+    writeln("DFS: Vertices should be finished exactly once.");
+
+    static struct Visitor {
+        this(ref int[Vertex] finishCounts) {
+            _counts = &finishCounts;
+        }
+
+        void finishVertex(ref const(G) g, Vertex v) {
+            (*_counts)[v]++;
+        }
+
+        NullVisitor!G impl;
+        alias impl this;
+
+        G* _graph;
+        int[Vertex]* _counts;
+    }
+
+    int[Vertex] counts;
+    Colour[Vertex] colourMap;
+
+    auto testGraph = MakeTestGraph!G(); 
+
+    depthFirstSearch(testGraph.graph,
+                     testGraph.vertices['a'], 
+                     colourMap, 
+                     Visitor(counts));
+
+    // Assert that each vertex is discovered, and discovered exactly once
+    auto vertices = array(testGraph.graph.vertices);
+    assert (counts.length == vertices.length,
+        "Expected " ~ to!string(vertices.length) ~ 
+        " entries in edge finished array, got " ~ to!string(counts.length));
+
+    auto pred = (Vertex v) { return (v in counts) !is null; };
+    assert (all(testGraph.vertices.values, pred),
+        "Every vertex must appear in the finish count array");
+
+    assert (std.algorithm.all!("a == 1")(counts.values),
+        "Vertices must be finished exactly once.");
 }
