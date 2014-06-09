@@ -70,8 +70,70 @@ template connectedComponents(GraphT, ComponentMapT) {
         }
 
         size_t count = size_t.max;
-        depthFirstSearch(g, g.vertices[0], colourMap, 
+        depthFirstSearch(g, g.vertices.front, colourMap, 
                          ComponentRecorder(count, components));
         return count+1;
+    }
+}
+
+// ----------------------------------------------------------------------------
+//
+// ----------------------------------------------------------------------------
+
+version (unittest) {
+    import std.algorithm, std.conv, std.stdio;
+    import anansi.adjacencylist, anansi.traits;
+
+    void makeDisconnectedCycles(G)(ref G g, int cycles, int cycleSize) {
+        alias Vertex = G.VertexDescriptor;
+        foreach(i; 0 .. cycles) {
+            Vertex firstVertex = g.addVertex();
+            Vertex prevVertex;
+            Vertex currentVertex = firstVertex;
+            foreach(j; 1 .. cycleSize) {
+                prevVertex = currentVertex;
+                currentVertex = g.addVertex();
+                g.addEdge(prevVertex, currentVertex);
+            }
+            g.addEdge(currentVertex, firstVertex);
+        }
+    }
+}
+
+unittest {
+    writeln("Connected Components: Empty graph should return 0.");
+    alias G = AdjacencyList!(VecS, VecS, UndirectedS);
+    G g;
+    size_t[G.VertexDescriptor] components;
+    auto rval = connectedComponents(g, components);
+
+    assert (rval == 0, 
+        "connectedComponents() should return 0 for an empty graph.");
+
+    assert (components.length == 0,
+        "connected components array should be 0 length.");
+}
+
+
+unittest {
+    writeln("Connected Components: Components should be identified.");
+    // check each supported configuration of storage selectors 
+    foreach(VertexStorage; TypeTuple!(VecS, ListS)) {
+        foreach(EdgeStorage; TypeTuple!(VecS, ListS)) {
+            alias G = AdjacencyList!(VertexStorage, EdgeStorage, UndirectedS);
+            G g;
+            size_t[G.VertexDescriptor] components;
+            makeDisconnectedCycles(g, 5, 10);
+            auto rval = connectedComponents(g, components);
+
+            assert (rval == 5, 
+                "connectedComponents should return the number of components discovered.");
+
+            int[size_t] tally;
+            foreach(k, v; components) { tally[v]++; }
+
+            assert( all!("a == 10")(tally.values), 
+                "All components should have size 10." );
+        }
     }
 }
