@@ -1,0 +1,3 @@
+.dub
+*.a
+__test__library__
