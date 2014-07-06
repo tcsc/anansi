@@ -1,8 +1,9 @@
 {
 	"name": "dijkstra",
-	"description": "A minimal D application.",
-	"copyright": "Copyright © 2014, trent",
-	"authors": ["trent"],
+	"description": "An exampe illustrating Dijkstra's shortest paths.",
+	"license": "BSL-1.0",
+	"authors": ["Trent Clarke"],
 	"dependencies": {
-	}
+		"anansi": {"version": "~master", "path": "../../"}
+	},
 }
