@@ -60,9 +60,9 @@ public:
      * A handle that can be used by callers to identify a given edge.
      */
     public static struct EdgeDescriptor {
-        package const(VertexDescriptor) src;
-        package const(VertexDescriptor) dst;
-        package const(EdgeIndex) edgeIndex;
+        package VertexDescriptor src;
+        package VertexDescriptor dst;
+        package const(EdgeList.Node)* edgeIndex;
     }
 
     /**
@@ -326,7 +326,9 @@ public:
                     auto dst = edge.value._dst;
                 }
 
-                return EdgeDescriptor(src, dst, edge);
+                return EdgeDescriptor(cast(VertexDescriptor)src, 
+                                      cast(VertexDescriptor)dst, 
+                                      cast(EdgeIndex)(edge));
             } 
             
             void popFront() { _r.popFront(); }
@@ -362,7 +364,9 @@ public:
                     auto edge = _r.front;
                     auto s = edge.value._src;
                     auto d = edge.value._dst;
-                    return EdgeDescriptor(s, d, edge);
+                    return EdgeDescriptor(cast(VertexDescriptor)s, 
+                                          cast(VertexDescriptor)d, 
+                                          cast(EdgeIndex)edge);
                 } 
                 
                 void popFront() { _r.popFront(); }

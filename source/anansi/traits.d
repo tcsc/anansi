@@ -34,6 +34,13 @@ template isIncidenceGraph (G) {
 // Property map 
 // ----------------------------------------------------------------------------
 
+template isReadablePropertyMap (T, IndexT, ValueT) {
+    enum bool isReadablePropertyMap = is(typeof(
+    (ref T t, IndexT idx) {
+        ValueT v = t[idx]; // can query
+    }));
+}
+
 template isPropertyMap (T, IndexT, ValueT) {
     enum bool isPropertyMap = is(typeof(
     (ref T t, IndexT idx) {

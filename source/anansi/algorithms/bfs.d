@@ -91,7 +91,7 @@ template breadthFirstSearch(GraphT,
             visitor.initVertex(graph, v);
             colourMap[v] = Colour.White;
         }
-        BreadthFirstVisit(graph, source, colourMap, visitor, queue);
+        breadthFirstVisit(graph, source, colourMap, queue, visitor);
     }
 }
 
@@ -113,7 +113,7 @@ template breadthFirstSearch(GraphT,
  *             of the search (e.g. using a priority queue rather than the 
  *             default FIFO queue. 
  */
-template BreadthFirstVisit(GraphT, 
+template breadthFirstVisit(GraphT, 
                            VertexDescriptorT,
                            VisitorT = NullVisitor!GraphT, 
                            ColourMapT = Colour[VertexDescriptorT],
@@ -134,11 +134,11 @@ template BreadthFirstVisit(GraphT,
      *             during the traversal. 
      *   queue = The queue object used to order the expansion of vertices.
      */
-    void BreadthFirstVisit(ref const(GraphT) graph,
+    void breadthFirstVisit(ref const(GraphT) graph,
                            VertexDescriptorT source,
                            ref ColourMapT colour, 
-                           VisitorT visitor = VisitorT.init,
-                           QueueT queue = QueueT.init) {
+                           ref QueueT queue,
+                           VisitorT visitor = VisitorT.init) {
         colour[source] = Colour.Grey;
         queue.push(source);                       visitor.discoverVertex(graph, source);
 

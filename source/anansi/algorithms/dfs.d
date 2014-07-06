@@ -216,6 +216,10 @@ template depthFirstVisit(GraphT,
     }
 }
 
+// ----------------------------------------------------------------------------
+//
+// ----------------------------------------------------------------------------
+
 version (unittest) {
     import std.array, std.algorithm, std.conv, std.stdio;
     import anansi.adjacencylist, anansi.traits, anansi.container.set;

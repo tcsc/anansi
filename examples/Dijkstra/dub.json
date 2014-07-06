@@ -1,0 +1,8 @@
+{
+	"name": "dijkstra",
+	"description": "A minimal D application.",
+	"copyright": "Copyright © 2014, trent",
+	"authors": ["trent"],
+	"dependencies": {
+	}
+}
