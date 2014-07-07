@@ -1,6 +1,6 @@
 {
 	"name": "anansi",
-	"description": "A BGL-like graph handling ligrary in D.",
+	"description": "A BGL-like graph handling library in D.",
 	"license": "BSL-1.0",
 	"authors": ["Trent Clarke"],
 	"dependencies": {
