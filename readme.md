@@ -1,3 +1,5 @@
+#Anansi [![Build Status](https://travis-ci.org/tcsc/anansi.svg?branch=master)](https://travis-ci.org/tcsc/anansi)
+
 A graph manipulation library for the D Programming Language. Heavily inspired, possibly to the point of plaigiarism, by the boost graph library. At present Anansi implements only the tiniest subset of the BGL, but it should be at least at a point where it can be easily added to.
 
 This first pass will probably be a pretty simple translation of (bits of) the BGL into D. The second pass will hopefully transform it into something more like idiomaitic D.
