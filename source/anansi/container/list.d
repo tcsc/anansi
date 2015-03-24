@@ -1,6 +1,6 @@
 module anansi.container.list;
 
-import std.algorithm, std.conv, std.range, std.stdio, std.traits;
+import std.algorithm, std.conv, std.range, std.stdio, std.traits, std.typecons;
 
 /**
  * A doubley-linked list with a deliberately leaky abstraction. This container 
