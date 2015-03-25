@@ -4,7 +4,7 @@
  */
  module anansi.container.priorityqueue;
 
- import std.exception, std.functional, std.math, std.range, std.traits;
+ import std.algorithm, std.exception, std.functional, std.math, std.range, std.traits;
 
 /**
  * A priority queue implementation. Items with the highest priority (as defined
