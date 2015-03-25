@@ -42,4 +42,4 @@ void fn() {
 }
 ```
 
-Also, check out the project under the "examples" directory.
+Also, check out the projects under the "examples" directory.
