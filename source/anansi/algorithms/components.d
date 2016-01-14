@@ -1,6 +1,6 @@
 module anansi.algorithms.components;
 
-import std.stdio;
+import std.stdio, std.meta;
 
 import anansi.algorithms.dfs,
        anansi.traits,
@@ -118,8 +118,8 @@ unittest {
 unittest {
     writeln("Connected Components: Components should be identified.");
     // check each supported configuration of storage selectors 
-    foreach(VertexStorage; TypeTuple!(VecS, ListS)) {
-        foreach(EdgeStorage; TypeTuple!(VecS, ListS)) {
+    foreach(VertexStorage; AliasSeq!(VecS, ListS)) {
+        foreach(EdgeStorage; AliasSeq!(VecS, ListS)) {
             alias G = AdjacencyList!(VertexStorage, EdgeStorage, UndirectedS);
             G g;
             size_t[G.VertexDescriptor] components;
