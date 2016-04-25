@@ -1,5 +1,5 @@
 /**
- * An example using the anansi connected compomemt finder. Ported from the 
+ * An example using the anansi connected compomemt finder. Ported from the
  * boost graph library's example.
  */
 
@@ -20,7 +20,7 @@ void main() {
     graph.addEdge(b, e);
     graph.addEdge(e, a);
     graph.addEdge(c, f);
-    
+
     size_t[6] componentMap;
     auto nComponents = connectedComponents(graph, componentMap);
 

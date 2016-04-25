@@ -3,8 +3,8 @@ module anansi.container.list;
 import std.algorithm, std.conv, std.range, std.stdio, std.traits, std.typecons;
 
 /**
- * A doubley-linked list with a deliberately leaky abstraction. This container 
- * is explicitly for use with the anansi graph classes. 
+ * A doubley-linked list with a deliberately leaky abstraction. This container
+ * is explicitly for use with the anansi graph classes.
  */
 public struct List(T) {
 private:
@@ -23,13 +23,13 @@ public:
 
 public:
     /**
-     * The internal data storage object 
+     * The internal data storage object
      */
     static struct Node {
         protected this(T v, Node* p, Node* n) {
             value = v;
             p = prev;
-            n = next; 
+            n = next;
         }
 
         public @property inout(Node*) nextNode() inout {
@@ -40,8 +40,8 @@ public:
         protected Node* next;
         public T value;
 
-        public @property ref inout(T) valueRef() inout { 
-            return value; 
+        public @property ref inout(T) valueRef() inout {
+            return value;
         }
     }
 
@@ -51,11 +51,11 @@ public:
             _back = back;
         }
 
-        @property bool empty() const { 
+        @property bool empty() const {
             return (_front is null);
         }
 
-        @property ref const(T) front() const 
+        @property ref const(T) front() const
         in {
             assert (_front !is null);
         }
@@ -63,7 +63,7 @@ public:
             return (_front.value);
         }
 
-        void popFront() 
+        void popFront()
         in {
             assert (_front !is null);
         }
@@ -76,8 +76,8 @@ public:
 
         @property ConstRange save() { return this; }
 
-        public @property const(Node)* frontNode() { 
-            return _front; 
+        public @property const(Node)* frontNode() {
+            return _front;
         }
 
     private:
@@ -95,7 +95,7 @@ public:
             return (_front is null);
         }
 
-        @property ref T front() 
+        @property ref T front()
         in {
             assert (_front !is null);
         }
@@ -103,7 +103,7 @@ public:
             return _front.value;
         }
 
-        void popFront() 
+        void popFront()
         in {
             assert (_front !is null);
         }
@@ -136,7 +136,7 @@ public:
     Range opSlice() { return Range(_front, _back); }
     ConstRange opSlice() const { return ConstRange(_front, _back); }
 
-    Node* insertBack(T value) 
+    Node* insertBack(T value)
     out(result) {
         assert (result !is null);
     }
@@ -182,7 +182,7 @@ public:
         --_size;
     }
 
-    ref inout(T) front() inout 
+    ref inout(T) front() inout
     in {
         assert (_front !is null);
     }
@@ -231,7 +231,7 @@ private:
         }
 
         return tuple(newFront, newBack);
-    } 
+    }
 
 private:
     Node* _front;
@@ -248,13 +248,13 @@ unittest {
 unittest {
     writeln("List: construct from a Range.");
     auto data = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    auto list = List!int(data); 
-    assert (list.length == data.length, 
+    auto list = List!int(data);
+    assert (list.length == data.length,
     "Bad length value, expected: " ~ to!string(data.length) ~
     ", got: " ~ to!string(list.length));
 
     foreach(x; zip(data, list[])) {
-        assert(x[0] == x[1], 
+        assert(x[0] == x[1],
             "Bad list value, expected: " ~ to!string(x[0]) ~
             ", got: " ~ to!string(x[1]));
     }
@@ -272,21 +272,21 @@ unittest {
     auto pn = l.insertBack('a');
     l.remove(pn);
 
-    assert (l.length == 0, 
+    assert (l.length == 0,
         "Length must be 0 after removing the only element.");
 
     size_t count;
-    foreach(c; l[]) 
+    foreach(c; l[])
     ++count;
 
-    assert(count == 0, 
+    assert(count == 0,
         "Iterting over an empty list should never invoke loop body.");
 }
 
 unittest {
     writeln("List: remove first element in list.");
     List!int l;
-    auto n0 = l.insertBack(0); 
+    auto n0 = l.insertBack(0);
     auto n1 = l.insertBack(1);
     auto n2 = l.insertBack(2);
 
@@ -295,16 +295,16 @@ unittest {
     assert (l.length == 2);
 
     foreach(x; zip([1, 2], l[])) {
-        assert(x[0] == x[1], 
+        assert(x[0] == x[1],
             "Bad list value, expected: " ~ to!string(x[0]) ~
             ", got: " ~ to!string(x[1]));
-    } 
+    }
 }
 
 unittest {
     writeln("List: remove last element in list.");
     List!int l;
-    auto n0 = l.insertBack(0); 
+    auto n0 = l.insertBack(0);
     auto n1 = l.insertBack(1);
     auto n2 = l.insertBack(2);
 
@@ -313,16 +313,16 @@ unittest {
     assert (l.length == 2);
 
     foreach(x; zip([0, 1], l[])) {
-        assert(x[0] == x[1], 
+        assert(x[0] == x[1],
             "Bad list value, expected: " ~ to!string(x[0]) ~
             ", got: " ~ to!string(x[1]));
-    } 
+    }
 }
 
 unittest {
     writeln("List: remove middle element in list.");
     List!int l;
-    auto n0 = l.insertBack(0); 
+    auto n0 = l.insertBack(0);
     auto n1 = l.insertBack(1);
     auto n2 = l.insertBack(2);
 
@@ -331,7 +331,7 @@ unittest {
     assert (l.length == 2);
 
     foreach(x; zip([0, 2], l[])) {
-    assert(x[0] == x[1], 
+    assert(x[0] == x[1],
         "Bad list value, expected: " ~ to!string(x[0]) ~
         ", got: " ~ to!string(x[1]));
     }
@@ -343,7 +343,7 @@ unittest {
 unittest {
     writeln("List: remove all-but-one element in a list.");
     List!int l;
-    auto n0 = l.insertBack(0); 
+    auto n0 = l.insertBack(0);
     auto n1 = l.insertBack(1);
     auto n2 = l.insertBack(2);
 
@@ -353,16 +353,16 @@ unittest {
     assert (l.length == 1);
 
     foreach(x; zip([0], l[])) {
-        assert(x[0] == x[1], 
+        assert(x[0] == x[1],
             "Bad list value, expected: " ~ to!string(x[0]) ~
             ", got: " ~ to!string(x[1]));
-    } 
+    }
 }
 
 unittest {
     writeln("List: remove all elements in a list.");
     List!int l;
-    auto n0 = l.insertBack(0); 
+    auto n0 = l.insertBack(0);
     auto n1 = l.insertBack(1);
     auto n2 = l.insertBack(2);
 
@@ -374,8 +374,8 @@ unittest {
     size_t count = 0;
     foreach(_; l[]) {
         ++count;
-    } 
+    }
 
-    assert (count == 0, 
+    assert (count == 0,
         "iterating over an empty range should never hit the loop body.");
 }

@@ -18,18 +18,18 @@ struct AdjacencyList (alias VertexStorage = VecS,
 {
 public:
     alias VertexDescriptor = VertexStorage.IndexType;
- 
+
     enum IsUndirected = is(Directionality == UndirectedS);
     enum IsBidirectional = is(Directionality == BidirectionalS);
     enum IsDirected = !(IsUndirected || IsBidirectional);
 
-    /** 
-     * The main storage object for edges. Holds the source and destination 
-     * vertices for the graph, plus any property object. 
+    /**
+     * The main storage object for edges. Holds the source and destination
+     * vertices for the graph, plus any property object.
      */
     private static struct Edge {
-        this(VertexDescriptor src, VertexDescriptor dst, 
-             EdgeProperty value = EdgeProperty.init) 
+        this(VertexDescriptor src, VertexDescriptor dst,
+             EdgeProperty value = EdgeProperty.init)
         {
             _src = src;
             _dst = dst;
@@ -48,13 +48,13 @@ public:
         public @property void target(VertexDescriptor v) { _dst = v; }
 
         private EdgeProperty  _property;
-        public @property ref inout(EdgeProperty) value() inout { 
-            return _property; 
+        public @property ref inout(EdgeProperty) value() inout {
+            return _property;
         }
     }
 
     private alias EdgeList = List!Edge;
-    private alias EdgeIndex = EdgeList.Node*; 
+    private alias EdgeIndex = EdgeList.Node*;
 
     /**
      * A handle that can be used by callers to identify a given edge.
@@ -66,7 +66,7 @@ public:
     }
 
     /**
-     * The main storeage object for vertices. Maintains the collection of out- 
+     * The main storeage object for vertices. Maintains the collection of out-
      * (and optionally in-) edges for the vertex, plus any property values.
      */
     private static struct Vertex {
@@ -77,7 +77,7 @@ public:
             private EdgeContainer _inEdges;
         }
 
-        public this(VertexProperty p = VertexProperty.init) {
+        public this(VertexProperty p /*= VertexProperty.init*/) {
             static if (isNotNone!VertexProperty) {
                 _property = p;
             }
@@ -104,7 +104,7 @@ public:
             edges.eraseFrontOfRange(r);
         }
 
-        auto outEdges() const { return _outEdges[]; } 
+        auto outEdges() const { return _outEdges[]; }
 
         @property public size_t outDegree() const {
             return _outEdges.length;
@@ -122,8 +122,8 @@ public:
             auto inEdges() const { return _inEdges[]; }
 
             @property public size_t inDegree() const {
-                return _inEdges.length; 
-            } 
+                return _inEdges.length;
+            }
         }
 
         static if (isNotNone!VertexProperty) {
@@ -135,7 +135,7 @@ public:
         }
     }
 
-    /** 
+    /**
      * The main vertex store.
      */
     VertexStorage.Store!Vertex _vertices;
@@ -145,8 +145,8 @@ public:
      */
     EdgeList _edges;
 
-public: 
-    // ------------------------------------------------------------------------ 
+public:
+    // ------------------------------------------------------------------------
     // Vertex operations
     // ------------------------------------------------------------------------
 
@@ -167,7 +167,7 @@ public:
     }
 
     /**
-     * Returns a forward range that yields the descriptors for each vertex in 
+     * Returns a forward range that yields the descriptors for each vertex in
      * the graph. The order of the vertices is undefined.
      */
     @property auto vertices() inout {
@@ -181,16 +181,16 @@ public:
     }
 
     /**
-     * Removes a vertex from the graph. The complexity of this operaton 
-     * varies with the storage class. For storage classes that have 
-     * stable indexes, this is O(1). For classes with unstable indexes 
-     * this is at least O(n), where n is the number of edges in the graph, 
+     * Removes a vertex from the graph. The complexity of this operaton
+     * varies with the storage class. For storage classes that have
+     * stable indexes, this is O(1). For classes with unstable indexes
+     * this is at least O(n), where n is the number of edges in the graph,
      * due to the VertexDescriptors in all the edges having to be fixed up.
      *
      * This is the *minimum* complexity, because the underlying storage may
      * impose its own complexity costs on erasing the vertex itself as well.
      *
-     * Params: 
+     * Params:
      *   vertex = The VertexDescriptor of the vertex to erase.
      */
     void removeVertex(VertexDescriptor vertex) {
@@ -204,7 +204,7 @@ public:
     }
 
 public:
-    // ------------------------------------------------------------------------ 
+    // ------------------------------------------------------------------------
     // Edge operations
     // ------------------------------------------------------------------------
 
@@ -219,16 +219,16 @@ public:
      * Params:
      *  src = The VertexDescriptor of the edge's starting point.
      *  dst = The VertexDescriptor of the new edge's end point.
-     *  value = The value to associate with the new edge, if any. 
+     *  value = The value to associate with the new edge, if any.
      *
-     * Returns: Returns an AddEdgeResult value, containinf the descriptor of 
-     *          the edge, and a flag to let you know if it was newly created 
+     * Returns: Returns an AddEdgeResult value, containinf the descriptor of
+     *          the edge, and a flag to let you know if it was newly created
      *          (true), or the edge already esisted and the graph type doesn't
      *          support parallel edges, so the returned descriptor refers to
      *          the pre-existing edge (false).
      */
-    AddEdgeResult addEdge(VertexDescriptor src, 
-                          VertexDescriptor dst, 
+    AddEdgeResult addEdge(VertexDescriptor src,
+                          VertexDescriptor dst,
                           EdgeProperty value = EdgeProperty.init) {
 
         EdgeIndex newEdge = _edges.insertBack(Edge(src, dst, value));
@@ -236,11 +236,11 @@ public:
         pSrc.addOutEdge(newEdge);
 
         static if (IsUndirected) {
-            Vertex* pDst = &_vertices.get_value(dst); 
+            Vertex* pDst = &_vertices.get_value(dst);
             pDst.addOutEdge(newEdge);
         }
         else static if (IsBidirectional) {
-            Vertex* pDst = &_vertices.get_value(dst); 
+            Vertex* pDst = &_vertices.get_value(dst);
             pDst.addInEdge(newEdge);
         }
 
@@ -248,7 +248,7 @@ public:
     }
 
     /**
-     * Removes an edge from the graph.  
+     * Removes an edge from the graph.
      */
     void removeEdge(EdgeDescriptor edge) {
         VertexDescriptor src = cast(VertexDescriptor) edge.src;
@@ -298,26 +298,26 @@ public:
      * Params:
      *   vertex = The descriptor of the vertex to query.
      *
-     * Returns: Returns a range containing the edge descriptors of the 
-     *          supplied vertex's outbound edges. 
+     * Returns: Returns a range containing the edge descriptors of the
+     *          supplied vertex's outbound edges.
      */
     auto outEdges(VertexDescriptor vertex) const {
         static struct OutEdgeRange {
             alias EdgeRange = Vertex.EdgeContainer.ConstRange;
-        
-            this(VertexDescriptor src, EdgeRange r) { 
+
+            this(VertexDescriptor src, EdgeRange r) {
                 _src = src;
-                _r = r; 
+                _r = r;
             }
 
             @property bool empty() { return _r.empty; }
-            
+
             @property EdgeDescriptor front() {
                 auto edge = _r.front;
 
                 static if (IsUndirected) {
-                    auto s = edge.value._src; 
-                    auto d = edge.value._dst; 
+                    auto s = edge.value._src;
+                    auto d = edge.value._dst;
                     auto src = (s == _src) ? s : d;
                     auto dst = (s == _src) ? d : s;
                 }
@@ -326,11 +326,11 @@ public:
                     auto dst = edge.value._dst;
                 }
 
-                return EdgeDescriptor(cast(VertexDescriptor)src, 
-                                      cast(VertexDescriptor)dst, 
+                return EdgeDescriptor(cast(VertexDescriptor)src,
+                                      cast(VertexDescriptor)dst,
                                       cast(EdgeIndex)(edge));
-            } 
-            
+            }
+
             void popFront() { _r.popFront(); }
 
             private EdgeRange _r;
@@ -355,20 +355,20 @@ public:
         auto inEdges(VertexDescriptor vertex) const {
             static struct InEdgeRange {
                 alias EdgeRange = Vertex.EdgeContainer.ConstRange;
-            
+
                 this(EdgeRange r) { _r = r; }
 
                 @property bool empty() { return _r.empty; }
-                
+
                 @property EdgeDescriptor front() {
                     auto edge = _r.front;
                     auto s = edge.value._src;
                     auto d = edge.value._dst;
-                    return EdgeDescriptor(cast(VertexDescriptor)s, 
-                                          cast(VertexDescriptor)d, 
+                    return EdgeDescriptor(cast(VertexDescriptor)s,
+                                          cast(VertexDescriptor)d,
                                           cast(EdgeIndex)edge);
-                } 
-                
+                }
+
                 void popFront() { _r.popFront(); }
 
                 private EdgeRange _r;
@@ -393,7 +393,7 @@ public:
     }
 
     /**
-     * Fetches the total number of edges in the graph. For debugging purposes 
+     * Fetches the total number of edges in the graph. For debugging purposes
      * only.
      */
     @property size_t edgeCount() const {
@@ -469,7 +469,7 @@ unittest {
                 auto v3 = g.addVertex();
 
                 assert (g.vertexCount == 3,
-                        "Bad vertex count. Exepected 3, got " ~ 
+                        "Bad vertex count. Exepected 3, got " ~
                         to!string(g.vertexCount));
 
                 foreach(x; zip(g.vertices(), [v1, v2, v3][])) {
@@ -551,21 +551,21 @@ unittest {
                     auto a = g.addVertex('a');
                     auto b = g.addVertex('b');
                     auto c = g.addVertex('c');
-                    
+
                     auto ac = g.addEdge(a, c, "ac");
                     auto ca = g.addEdge(c, a, "ca");
 
                     g.removeVertex(b);
                 }
 
-                assert (g.vertexCount == 2, 
-                    Graph.stringof ~ ": Expected vertex count to be 2, got: " ~ 
+                assert (g.vertexCount == 2,
+                    Graph.stringof ~ ": Expected vertex count to be 2, got: " ~
                     to!string(g.vertexCount));
 
                 // assert that we only have the vertices we expect
                 auto vertices = array(g.vertices());
                 foreach(x; zip(vertices, ['a', 'c'])) {
-                    assert (g[x[0]] == x[1], 
+                    assert (g[x[0]] == x[1],
                         Graph.stringof ~ ": Mismatched vertex descriptors");
                 }
 
@@ -573,18 +573,18 @@ unittest {
                 auto a = vertices[0];
                 auto c = vertices[1];
                 auto ac = g.outEdges(a).front;
-                assert (g.source(ac) == a, 
+                assert (g.source(ac) == a,
                     Graph.stringof ~ ": Source(ac) should be a");
 
-                assert (g.target(ac) == c, 
+                assert (g.target(ac) == c,
                     Graph.stringof ~ ": Target(ac) should be c");
 
                 // assert the c -> a edge still holds
                 auto ca = g.outEdges(c).front;
-                assert (g.source(ca) == c, 
+                assert (g.source(ca) == c,
                     Graph.stringof ~ ": Source(ca) should be c");
 
-                assert (g.target(ca) == a, 
+                assert (g.target(ca) == a,
                     Graph.stringof ~ ": Target(ca) should be a");
 
             }
@@ -593,40 +593,40 @@ unittest {
 }
 
 version (unittest) {
-    void checkEdges(Graph)(ref Graph g, 
+    void checkEdges(Graph)(ref Graph g,
                            string name,
                            Graph.VertexDescriptor src,
                            Graph.VertexDescriptor[] outTargets,
                            Graph.VertexDescriptor[] inTargets) {
         auto outEdges = array(g.outEdges(src));
         auto outDegree = g.outDegree(src);
-        assert (outDegree == outTargets.length, 
-                Graph.stringof ~ ": Expected " ~ name ~ 
-                " to have out degree of " ~ to!string(outTargets.length) ~ 
+        assert (outDegree == outTargets.length,
+                Graph.stringof ~ ": Expected " ~ name ~
+                " to have out degree of " ~ to!string(outTargets.length) ~
                 ", got " ~ to!string(outDegree));
 
-        assert (outEdges.length == outTargets.length, 
+        assert (outEdges.length == outTargets.length,
                 Graph.stringof ~ ": Expected " ~ name ~ " to have exactly " ~
                 to!string(outTargets.length) ~ " out edge(s), got " ~
                 to!string(outEdges.length));
 
         foreach (t; outTargets) {
-            assert (any!(e => g.target(e) == t)(outEdges), 
-                    Graph.stringof ~ ": Expected target from " ~ name ~ 
+            assert (any!(e => g.target(e) == t)(outEdges),
+                    Graph.stringof ~ ": Expected target from " ~ name ~
                     " was not in out edges.");
         }
 
         static if (g.IsBidirectional) {
             auto inDegree = g.inDegree(src);
-            assert (inDegree == inTargets.length, 
-                    Graph.stringof ~ ": Expected " ~ name ~ 
-                    " to have in degree of " ~ to!string(inTargets.length) ~ 
+            assert (inDegree == inTargets.length,
+                    Graph.stringof ~ ": Expected " ~ name ~
+                    " to have in degree of " ~ to!string(inTargets.length) ~
                     ", got " ~ to!string(inDegree));
 
             auto inEdges = array(g.inEdges(src));
             foreach (t; inTargets) {
-                assert (any!(e => g.source(e) == t)(inEdges), 
-                        Graph.stringof ~ ": Expected source in " ~ name ~ 
+                assert (any!(e => g.source(e) == t)(inEdges),
+                        Graph.stringof ~ ": Expected source in " ~ name ~
                         " was not in in-edges.");
             }
         }
@@ -639,7 +639,7 @@ unittest {
         foreach(EdgeStorage; TypeTuple!(VecS, ListS)) {
             foreach(Directionality; TypeTuple!(DirectedS, UndirectedS, BidirectionalS)) {
                 alias Graph = AdjacencyList!(VertexStorage, EdgeStorage, Directionality, char, string);
-  
+
                 Graph g;
 
                 // Graph layout
@@ -654,7 +654,7 @@ unittest {
                 auto vC = g.addVertex('c');
                 auto vD = g.addVertex('d');
 
-                auto addUniqueEdge = delegate(Graph.VertexDescriptor s, Graph.VertexDescriptor d) { 
+                auto addUniqueEdge = delegate(Graph.VertexDescriptor s, Graph.VertexDescriptor d) {
                     auto tmp = g.addEdge(s, d, to!string(g[s]) ~ " --> " ~ to!string(g[d]) );
                     assert(tmp.addedNew, Graph.stringof ~ ": Edge must be unique.");
                     return tmp.edge;
@@ -682,7 +682,7 @@ unittest {
         foreach(EdgeStorage; TypeTuple!(VecS, ListS)) {
             foreach(Directionality; TypeTuple!(DirectedS, UndirectedS, BidirectionalS)) {
                 alias Graph = AdjacencyList!(VertexStorage, EdgeStorage, Directionality, char, string);
-  
+
                 Graph g;
 
                 // Graph layout
@@ -697,7 +697,7 @@ unittest {
                 auto vC = g.addVertex('c');
                 auto vD = g.addVertex('d');
 
-                auto addUniqueEdge = delegate(Graph.VertexDescriptor s, Graph.VertexDescriptor d) { 
+                auto addUniqueEdge = delegate(Graph.VertexDescriptor s, Graph.VertexDescriptor d) {
                     auto tmp = g.addEdge(s, d, to!string(g[s]) ~ " --> " ~ to!string(g[d]) );
                     assert(tmp.addedNew, Graph.stringof ~ ": Edge must be unique.");
                     return tmp.edge;
@@ -734,7 +734,7 @@ unittest {
         foreach(EdgeStorage; TypeTuple!(VecS, ListS)) {
             foreach(Directionality; TypeTuple!(DirectedS, UndirectedS, BidirectionalS)) {
                 alias Graph = AdjacencyList!(VertexStorage, EdgeStorage, Directionality, char, string);
-  
+
                 Graph g;
 
                 // Graph layout
@@ -749,7 +749,7 @@ unittest {
                 auto vC = g.addVertex('c');
                 auto vD = g.addVertex('d');
 
-                auto addUniqueEdge = delegate(Graph.VertexDescriptor s, Graph.VertexDescriptor d) { 
+                auto addUniqueEdge = delegate(Graph.VertexDescriptor s, Graph.VertexDescriptor d) {
                     auto tmp = g.addEdge(s, d, to!string(g[s]) ~ " --> " ~ to!string(g[d]) );
                     assert(tmp.addedNew, Graph.stringof ~ ": Edge must be unique.");
                     return tmp.edge;

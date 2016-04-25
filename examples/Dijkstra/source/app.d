@@ -1,7 +1,7 @@
 
 /**
  * Copyright 2014 Trent Clarke.
- * 
+ *
  * Distributed under the Boost Software License, Version 1.0. (See
  * copy at http://www.boost.org/LICENSE_1_0.txt)
  */
@@ -12,7 +12,7 @@ import std.stdio;
 void main()
 {
     alias Graph = AdjacencyList!(VecS, VecS, DirectedS, char, string);
-	
+
     Graph graph;
     auto a = graph.addVertex('a');
     auto b = graph.addVertex('b');
@@ -35,13 +35,13 @@ void main()
     auto colourMap = new Colour[graph.vertexCount];
     auto distance = new real[graph.vertexCount];
     auto predecessor = new Graph.VertexDescriptor[graph.vertexCount];
-    dijkstraShortestPaths(graph, a, weight, predecessor, 
-                          NullDijkstraVisitor!Graph(), 
+    dijkstraShortestPaths(graph, a, weight, predecessor,
+                          NullDijkstraVisitor!Graph(),
                           colourMap,
                           distance);
 
     foreach(v; graph.vertices) {
-        writeln(graph[v], " - Distance: ", distance[v], 
+        writeln(graph[v], " - Distance: ", distance[v],
 	                  ", Predecessor: ", graph[predecessor[v]]);
     }
 }

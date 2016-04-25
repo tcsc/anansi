@@ -1,0 +1,6 @@
+name "astar-cities"
+description "An example illustrating an A* search."
+copyright "Copyright © 2016, Trent Clarke"
+license "BSL-1.0"
+authors "Trent Clarke"
+dependency "anansi" version="master" path="../../"
