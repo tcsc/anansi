@@ -3,11 +3,11 @@
  */
 module anansi.algorithms.bfs;
 
-import anansi.container, 
+import anansi.container,
        anansi.traits,
        anansi.types;
-import std.algorithm, 
-       std.array, 
+import std.algorithm,
+       std.array,
        std.stdio;
 
 /**
@@ -21,9 +21,9 @@ template isBfsVisitor (V) {
 }
 
 /**
- * A default implementation of the depth-first-search visitor concept. More 
+ * A default implementation of the depth-first-search visitor concept. More
  * specialised visitors can delegate the bits that they don't care about
- * to an instance of NullVisitor without having to re-implement them. 
+ * to an instance of NullVisitor without having to re-implement them.
  *
  * Also servers as a handy point for documenting the visitor interface.
  */
@@ -47,22 +47,22 @@ struct NullVisitor(GraphT) {
  * visitor.
  *
  * Params:
- *    GraphT = The type of the graph object to traverse. Must model the 
+ *    GraphT = The type of the graph object to traverse. Must model the
  *             incidence graph concept.
  *    VertexDescriptorT = The descriptor type for vertices in a GraphT.
  *    VisitorT = The visitor type.
- *    ColourMapT = The type of the property map that will be used to control 
- *                 the graph traversal. Must model a property map that stores 
- *                 Colours keyed by a VertexDescriptorT. 
- *    QueueT = The type of the queue used to order the expansion of vertices. 
- *             Changing the queue type can be used to customise the behaviour 
- *             of the search (e.g. using a priority queue rather than the 
+ *    ColourMapT = The type of the property map that will be used to control
+ *                 the graph traversal. Must model a property map that stores
+ *                 Colours keyed by a VertexDescriptorT.
+ *    QueueT = The type of the queue used to order the expansion of vertices.
+ *             Changing the queue type can be used to customise the behaviour
+ *             of the search (e.g. using a priority queue rather than the
  *             default FIFO queue.
  */
-template breadthFirstSearch(GraphT, 
+template breadthFirstSearch(GraphT,
                             VertexDescriptorT,
                             VisitorT = NullVisitor!GraphT,
-                            ColourMapT = Colour[VertexDescriptorT], 
+                            ColourMapT = Colour[VertexDescriptorT],
                             QueueT = FifoQueue!(VertexDescriptorT)) {
 
     static assert (isIncidenceGraph!GraphT);
@@ -77,14 +77,14 @@ template breadthFirstSearch(GraphT,
      *   root = The vertex to serve as the starting point.
      *   colourMap = The colour map used to control the expansion of edges
      *               and verices in the graph. This will be totally re-
-     *               initialised before the traversal begins. 
-     *   visitor = A visitor object that will be notified of various events 
-     *             during the traversal. 
+     *               initialised before the traversal begins.
+     *   visitor = A visitor object that will be notified of various events
+     *             during the traversal.
      *   queue = The queue object used to order the expansion of vertices.
      */
     void breadthFirstSearch(ref const(GraphT) graph,
                             VertexDescriptorT source,
-                            ref ColourMapT colourMap, 
+                            ref ColourMapT colourMap,
                             VisitorT visitor = VisitorT.init,
                             QueueT queue = QueueT.init) {
         foreach(v; graph.vertices) {
@@ -96,26 +96,26 @@ template breadthFirstSearch(GraphT,
 }
 
 /**
- * Breadth-first traversal of the graph from a given starting point. This 
- * function does not reset the colourMap, so can be efficiently used 
+ * Breadth-first traversal of the graph from a given starting point. This
+ * function does not reset the colourMap, so can be efficiently used
  * repeatedly on components of the graph.
  *
  * Params:
- *    GraphT = The type of the graph object to traverse. Must model the 
+ *    GraphT = The type of the graph object to traverse. Must model the
  *             incidence graph concept.
  *    VertexDescriptorT = The descriptor type for vertices in a GraphT.
  *    VisitorT = The visitor type.
- *    ColourMapT = The type of the property map that will be used to control 
- *                 the graph traversal. Must model a property map that stores 
- *                 Colours keyed by a VertexDescriptorT. 
- *    QueueT = The type of the queue used to order the expansion of vertices. 
- *             Changing the queue type can be used to customise the behaviour 
- *             of the search (e.g. using a priority queue rather than the 
- *             default FIFO queue. 
+ *    ColourMapT = The type of the property map that will be used to control
+ *                 the graph traversal. Must model a property map that stores
+ *                 Colours keyed by a VertexDescriptorT.
+ *    QueueT = The type of the queue used to order the expansion of vertices.
+ *             Changing the queue type can be used to customise the behaviour
+ *             of the search (e.g. using a priority queue rather than the
+ *             default FIFO queue.
  */
-template breadthFirstVisit(GraphT, 
+template breadthFirstVisit(GraphT,
                            VertexDescriptorT,
-                           VisitorT = NullVisitor!GraphT, 
+                           VisitorT = NullVisitor!GraphT,
                            ColourMapT = Colour[VertexDescriptorT],
                            QueueT = FifoQueue!VertexDescriptorT) {
 
@@ -130,13 +130,13 @@ template breadthFirstVisit(GraphT,
      *   source = The vertex to serve as the starting point.
      *   colour = The colour map used to control the expansion of edges
      *            and verices in the graph.
-     *   visitor = A visitor object that will be notified of various events 
-     *             during the traversal. 
+     *   visitor = A visitor object that will be notified of various events
+     *             during the traversal.
      *   queue = The queue object used to order the expansion of vertices.
      */
     void breadthFirstVisit(ref const(GraphT) graph,
                            VertexDescriptorT source,
-                           ref ColourMapT colour, 
+                           ref ColourMapT colour,
                            ref QueueT queue,
                            VisitorT visitor = VisitorT.init) {
         colour[source] = Colour.Grey;
@@ -182,7 +182,7 @@ version (unittest) {
 
     auto indexOf(ValueT)(ValueT[] haystack, ValueT needle) {
         foreach(n, v; haystack) {
-            if (v == needle) return n; 
+            if (v == needle) return n;
         }
         return -1;
     }
@@ -228,7 +228,7 @@ version (unittest) {
         return TestGraph!GraphT(g, vertices);
     }
 
-    alias G = AdjacencyList!(VecS, VecS, DirectedS, char, string); 
+    alias G = AdjacencyList!(VecS, VecS, DirectedS, char, string);
     alias Vertex = G.VertexDescriptor;
     alias Edge = G.EdgeDescriptor;
 }
@@ -257,11 +257,11 @@ unittest {
     char[] examinationOrder;
     Colour[Vertex] colourMap;
 
-    auto testGraph = MakeTestGraph!G(); 
+    auto testGraph = MakeTestGraph!G();
 
     breadthFirstSearch(testGraph.graph,
-                       testGraph.vertices['a'], 
-                       colourMap, 
+                       testGraph.vertices['a'],
+                       colourMap,
                        Visitor(testGraph.graph, examinationOrder));
 
     // Assert that each vertex is examined, and examined exactly once
@@ -270,7 +270,7 @@ unittest {
         to!string(examinationOrder.length));
 
     auto keyExists = delegate(char v) { return indexOf(examinationOrder, v) >= 0; };
-    
+
     assert (all(testGraph.vertices.keys, keyExists),
         "Expected all vertices to appear in the examined vertex list");
 
@@ -279,10 +279,10 @@ unittest {
         "Expected Vertex A to be the first vertex examined.");
 
     // Assert that the vertices are enumerated breadth first
-    assert (indexOf(examinationOrder, 'c') < indexOf(examinationOrder, 'e'), 
+    assert (indexOf(examinationOrder, 'c') < indexOf(examinationOrder, 'e'),
         "Expected vertex C to appear before vertex E.");
- 
-    assert (indexOf(examinationOrder, 'd') < indexOf(examinationOrder, 'f'), 
+
+    assert (indexOf(examinationOrder, 'd') < indexOf(examinationOrder, 'f'),
         "Expected vertex D to appear before vertex F.");
 }
 
@@ -308,11 +308,11 @@ unittest {
     int[Vertex] counts;
     Colour[Vertex] colourMap;
 
-    auto testGraph = MakeTestGraph!G(); 
+    auto testGraph = MakeTestGraph!G();
 
     breadthFirstSearch(testGraph.graph,
-                       testGraph.vertices['a'], 
-                       colourMap, 
+                       testGraph.vertices['a'],
+                       colourMap,
                        Visitor(counts));
 
     // Assert that each vertex is discovered, and discovered exactly once
@@ -348,11 +348,11 @@ unittest {
     int[Edge] counts;
     Colour[Vertex] colourMap;
 
-    auto testGraph = MakeTestGraph!G(); 
+    auto testGraph = MakeTestGraph!G();
 
     breadthFirstSearch(testGraph.graph,
-                       testGraph.vertices['a'], 
-                       colourMap, 
+                       testGraph.vertices['a'],
+                       colourMap,
                        Visitor(counts));
 
     auto edges = Set!Edge();
@@ -361,7 +361,7 @@ unittest {
 
     // Assert that each edge is discovered, and discovered exactly once
     assert (counts.length == edges.length,
-        "Expected " ~ to!string(edges.length) ~ 
+        "Expected " ~ to!string(edges.length) ~
         " entries in discovery count array, got " ~ to!string(counts.length));
 
     auto pred = (Edge e) { return (e in counts) !is null; };
@@ -373,7 +373,7 @@ unittest {
 
 unittest {
     writeln("BFS: Edges in an undirected graph should be examined at least once.");
-    alias UndirectedGraph = AdjacencyList!(VecS, VecS, UndirectedS, char, string); 
+    alias UndirectedGraph = AdjacencyList!(VecS, VecS, UndirectedS, char, string);
     alias UEdge = UndirectedGraph.EdgeDescriptor;
 
     static struct Visitor {
@@ -391,14 +391,14 @@ unittest {
         int[UEdge]* _counts;
     }
 
-    auto testGraph = MakeTestGraph!UndirectedGraph(); 
+    auto testGraph = MakeTestGraph!UndirectedGraph();
 
     int[UEdge] counts;
     Colour[Vertex] colourMap;
 
     breadthFirstSearch(testGraph.graph,
-                       testGraph.vertices['a'], 
-                       colourMap, 
+                       testGraph.vertices['a'],
+                       colourMap,
                        Visitor(counts));
 
     auto edges = Set!UEdge();
@@ -407,7 +407,7 @@ unittest {
 
     // Assert that each edge is discovered at least once
     assert (counts.length == edges.length,
-        "Expected " ~ to!string(edges.length) ~ 
+        "Expected " ~ to!string(edges.length) ~
         " entries in discovery count array, got " ~ to!string(counts.length));
 
     auto pred = (UEdge e) { return (e in counts) !is null; };
@@ -421,7 +421,7 @@ unittest {
     writeln("BFS: Tree & non-tree vertices should be identified");
 
     static struct Visitor {
-        this(Vertex black, Vertex grey, 
+        this(Vertex black, Vertex grey,
              ref int treeCount,
              ref int nonTreeCount) {
             _black = black;
@@ -462,11 +462,11 @@ unittest {
     int treeCount = 0; int nonTreeCount = 0;
     Colour[Vertex] colourMap;
 
-    auto testGraph = MakeTestGraph!G(); 
+    auto testGraph = MakeTestGraph!G();
 
     breadthFirstSearch(testGraph.graph,
-                       testGraph.vertices['a'], 
-                       colourMap, 
+                       testGraph.vertices['a'],
+                       colourMap,
                        Visitor(testGraph.vertices['a'],
                                testGraph.vertices['e'],
                                treeCount,
@@ -475,7 +475,7 @@ unittest {
     assert (treeCount == 5,
         "Expected tree hit count of 5, got " ~ to!string(nonTreeCount));
 
-    assert (nonTreeCount == 2, 
+    assert (nonTreeCount == 2,
         "Expected non-tree hit count of 2, got " ~ to!string(nonTreeCount));
 
 }
@@ -502,17 +502,17 @@ unittest {
     int[Vertex] counts;
     Colour[Vertex] colourMap;
 
-    auto testGraph = MakeTestGraph!G(); 
+    auto testGraph = MakeTestGraph!G();
 
     breadthFirstSearch(testGraph.graph,
-                       testGraph.vertices['a'], 
-                       colourMap, 
+                       testGraph.vertices['a'],
+                       colourMap,
                        Visitor(counts));
 
     // Assert that each vertex is discovered, and discovered exactly once
     auto vertices = array(testGraph.graph.vertices);
     assert (counts.length == vertices.length,
-        "Expected " ~ to!string(vertices.length) ~ 
+        "Expected " ~ to!string(vertices.length) ~
         " entries in edge discovery array, got " ~ to!string(counts.length));
 
     auto pred = (Vertex v) { return (v in counts) !is null; };

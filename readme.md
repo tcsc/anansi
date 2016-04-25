@@ -8,7 +8,7 @@ This first pass will probably be a pretty simple translation of (bits of) the BG
 
 **Q**: Why another graph handling library?
 
-**A**: Because the only available graph handling library in the Dub package registry was GPL licensed, and I thought it might be nice to have a graph library that people can use in commercial code. Don't get me wrong; [the dgraph library](http://code.dlang.org/packages/dgraph) is awesome, and got me out of a hole in a personal project. It is also a hell of a lot simpler to use than this. I just wanted the option. 
+**A**: Because the only available graph handling library in the Dub package registry was GPL licensed, and I thought it might be nice to have a graph library that people can use in commercial code. Don't get me wrong; [the dgraph library](http://code.dlang.org/packages/dgraph) is awesome, and got me out of a hole in a personal project. It is also a hell of a lot simpler to use than this. I just wanted the option.
 
 **Q**: Why "Anansi"?
 
@@ -34,7 +34,7 @@ void fn() {
   auto a = g.addVertex('a');
   auto b = g.addVertex('b');
   g.addEdge(a, b, "a -> b");
-  
+
   // now dow something interesting with your graph
   for(v; g.vertices) {
     writeln("Hi from vertex ", g[v]);

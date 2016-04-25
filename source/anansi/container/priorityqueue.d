@@ -8,12 +8,12 @@
 
 /**
  * A priority queue implementation. Items with the highest priority (as defined
- * by the supplied predicate) come off the queue first. You can change the 
- * order of the queue by supplying a custom predicate, or overriding opCmp 
+ * by the supplied predicate) come off the queue first. You can change the
+ * order of the queue by supplying a custom predicate, or overriding opCmp
  * on the type being queued.
  */
 struct PriorityQueue(T, alias Predicate = "a > b") {
-    this(Stuff)(Stuff stuff) if (isInputRange!Stuff && 
+    this(Stuff)(Stuff stuff) if (isInputRange!Stuff &&
                                  isImplicitlyConvertible!(ElementType!Stuff, T)) {
         foreach(s; stuff)
             push(s);
@@ -38,16 +38,16 @@ struct PriorityQueue(T, alias Predicate = "a > b") {
     public ref inout(T) front() inout
     in {
         assert (_payload.length > 0, "The queue may not be empty.");
-    } 
+    }
     body {
         return _payload[0];
     }
 
     /**
-     * Removes the highest-priority item from the queue. The queue must not 
+     * Removes the highest-priority item from the queue. The queue must not
      * be empty.
      */
-    public void pop() 
+    public void pop()
     in {
         assert (_payload.length > 0, "The queue may not be empty.");
     }
@@ -93,7 +93,7 @@ struct PriorityQueue(T, alias Predicate = "a > b") {
     }
 
     /**
-     * Recursively enforces the heap property of the items in the 
+     * Recursively enforces the heap property of the items in the
      * payload array, from the bottom up.
      */
     private bool bubbleUp(size_t index) {
@@ -110,14 +110,14 @@ struct PriorityQueue(T, alias Predicate = "a > b") {
     }
 
     /**
-     * Recursively enforces the heap property of the items in the payload 
+     * Recursively enforces the heap property of the items in the payload
      * array, from the top down.
      */
     private void siftDown(size_t index) {
         immutable size_t leftChild = (index * 2) + 1;
         immutable size_t rightChild = leftChild + 1;
 
-        immutable size_t nChildren = 
+        immutable size_t nChildren =
             sgn(cast(int)_payload.length - cast(int)rightChild) + 1;
 
         switch(nChildren) {
@@ -134,9 +134,9 @@ struct PriorityQueue(T, alias Predicate = "a > b") {
 
             case 2:
                 // two children, examine the larger child and push the values
-                // down the tree 
-                immutable size_t target = 
-                    greaterThan(_payload[leftChild], _payload[rightChild]) ? 
+                // down the tree
+                immutable size_t target =
+                    greaterThan(_payload[leftChild], _payload[rightChild]) ?
                         leftChild : rightChild;
                 if (greaterThan(_payload[target], _payload[index])) {
                     swap(_payload[index], _payload[target]);
@@ -153,7 +153,7 @@ struct PriorityQueue(T, alias Predicate = "a > b") {
     alias greaterThan = binaryFun!Predicate;
 
     /**
-     * The items in the queue, stored as implicit tree that satisfies the heap 
+     * The items in the queue, stored as implicit tree that satisfies the heap
      * property.
      */
     private T[] _payload;
@@ -177,12 +177,12 @@ unittest {
 unittest {
     writeln("PriorityQueue: Construction from a range yields a valid queue.");
     auto q = PriorityQueue!int([1, 3, 5, 7, 9, 2, 4, 6, 8, 10]);
-    assert (q.length == 10, 
+    assert (q.length == 10,
         "Expected a queue of length 10, got " ~ to!string(q.length));
     auto expected = 10;
     while (!q.empty) {
-        assert (q.front == expected, 
-            "Expected a value of " ~ to!string(expected) ~ 
+        assert (q.front == expected,
+            "Expected a value of " ~ to!string(expected) ~
             ", got " ~ to!string(q.front));
         --expected;
         q.pop();
@@ -210,8 +210,8 @@ unittest {
 
     auto expected = 10;
     while (!q.empty) {
-        assert (q.front == expected, 
-            "Expected a value of " ~ to!string(expected) ~ 
+        assert (q.front == expected,
+            "Expected a value of " ~ to!string(expected) ~
             ", got " ~ to!string(q.front));
         --expected;
         q.pop();
@@ -221,12 +221,12 @@ unittest {
 unittest {
     writeln("PriorityQueue: Custom predicates can change the order of the queue.");
     auto q = PriorityQueue!(int, "a < b")([1, 3, 5, 7, 9, 2, 4, 6, 8, 10]);
-    assert (q.length == 10, 
+    assert (q.length == 10,
         "Expected a queue of length 10, got " ~ to!string(q.length));
-    
+
     foreach (expected; 1 .. 11) {
-        assert (q.front == expected, 
-            "Expected a value of " ~ to!string(expected) ~ 
+        assert (q.front == expected,
+            "Expected a value of " ~ to!string(expected) ~
             ", got " ~ to!string(q.front));
         q.pop();
     }
@@ -238,8 +238,8 @@ unittest {
     q.updateIf!("a == 7", (ref int x) => x = 42)();
 
     foreach (expected; [42, 10, 9, 8, 6, 5, 4, 3, 2, 1]) {
-        assert (q.front == expected, 
-            "Expected a value of " ~ to!string(expected) ~ 
+        assert (q.front == expected,
+            "Expected a value of " ~ to!string(expected) ~
             ", got " ~ to!string(q.front));
         q.pop();
     }
@@ -251,8 +251,8 @@ unittest {
     q.updateIf!("a == 7", (ref int x) => x = 0)();
 
     foreach (expected; [10, 9, 8, 6, 5, 4, 3, 2, 1, 0]) {
-        assert (q.front == expected, 
-            "Expected a value of " ~ to!string(expected) ~ 
+        assert (q.front == expected,
+            "Expected a value of " ~ to!string(expected) ~
             ", got " ~ to!string(q.front));
         q.pop();
     }
@@ -266,8 +266,8 @@ unittest {
     q.updateIf((int x) => x == y, (ref int x) => x = z);
 
     foreach (expected; [42, 10, 9, 8, 6, 5, 4, 3, 2, 1]) {
-        assert (q.front == expected, 
-            "Expected a value of " ~ to!string(expected) ~ 
+        assert (q.front == expected,
+            "Expected a value of " ~ to!string(expected) ~
             ", got " ~ to!string(q.front));
         q.pop();
     }
@@ -281,8 +281,8 @@ unittest {
     q.updateIf((int x) => x == y, (ref int x) => x = z);
 
     foreach (expected; [10, 9, 8, 6, 5, 4, 3, 2, 1, 0]) {
-        assert (q.front == expected, 
-            "Expected a value of " ~ to!string(expected) ~ 
+        assert (q.front == expected,
+            "Expected a value of " ~ to!string(expected) ~
             ", got " ~ to!string(q.front));
         q.pop();
     }
@@ -294,8 +294,8 @@ unittest {
     q.updateIf!("a == 7", (ref int x) => x = x)();
 
     foreach (expected; [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) {
-        assert (q.front == expected, 
-            "Expected a value of " ~ to!string(expected) ~ 
+        assert (q.front == expected,
+            "Expected a value of " ~ to!string(expected) ~
             ", got " ~ to!string(q.front));
         q.pop();
     }

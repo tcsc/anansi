@@ -1,7 +1,7 @@
 module anansi.traits;
 
 import std.range, std.traits, std.typecons;
-import anansi.container;
+import anansi.container : List, Array;
 
 // ----------------------------------------------------------------------------
 // Graph concepts
@@ -27,11 +27,11 @@ template isIncidenceGraph (G) {
             G.VertexDescriptor src = g.source(e); // Can query edge source
             G.VertexDescriptor dst = g.target(e); // Can query edge target
         }
-    }));   
+    }));
 }
 
 // ----------------------------------------------------------------------------
-// Property map 
+// Property map
 // ----------------------------------------------------------------------------
 
 template isReadablePropertyMap (T, IndexT, ValueT) {
@@ -54,14 +54,14 @@ template isPropertyMap (T, IndexT, ValueT) {
 // ----------------------------------------------------------------------------
 
 /**
- * 
+ *
  */
 template isQueue(T, ValueT) {
     enum bool isQueue = is(typeof(
     (ref T t) {
         bool e = t.empty;
         ValueT v = t.front;
-        t.push(v); 
+        t.push(v);
         t.pop();
     }));
 }
@@ -99,7 +99,7 @@ final struct VecS {
             else {
                 return target;
             }
-        } 
+        }
 
         @property auto dup() {
             return Store(_store.dup);
@@ -120,12 +120,12 @@ final struct ListS {
             return PushResult!(typeof(rval))(rval, true);
         }
 
-        void erase(IndexType index) { 
+        void erase(IndexType index) {
             auto node = cast(List!(ValueType).Node*) index;
-            _store.remove(node); 
+            _store.remove(node);
         }
 
-        void eraseFrontOfRange(List!(ValueType).Range range) 
+        void eraseFrontOfRange(List!(ValueType).Range range)
         in {
             assert (!range.empty, "Range must not be empty.");
         }
@@ -137,15 +137,15 @@ final struct ListS {
             static struct IndexRange {
                 alias Node = List!(ValueType).Node;
 
-                this(const(Node)* front, const(Node)* back) { 
-                    _front = front; 
-                    _back = back; 
+                this(const(Node)* front, const(Node)* back) {
+                    _front = front;
+                    _back = back;
                 }
 
                 @property bool empty() const { return _front is null; }
                 @property void* front() const { return cast(void*) _front; }
-                void popFront() { 
-                    if (_front is _back) 
+                void popFront() {
+                    if (_front is _back)
                         _front = _back = null;
                     else
                         _front = _front.nextNode;
@@ -169,7 +169,7 @@ final struct ListS {
 
         @property auto dup() {
             return Store(_store.dup);
-        } 
+        }
 
         alias _store this;
 
@@ -183,7 +183,7 @@ struct PushResult(IndexType) {
 }
 
 // ----------------------------------------------------------------------------
-// 
+//
 // ----------------------------------------------------------------------------
 
 final struct DirectedS {};
@@ -191,7 +191,7 @@ final struct UndirectedS {};
 final struct BidirectionalS {};
 
 // ----------------------------------------------------------------------------
-// 
+//
 // ----------------------------------------------------------------------------
 
 final static struct NoProperty {};
@@ -204,6 +204,6 @@ template isNone(T: NoProperty) {
   enum isNone = true;
 }
 
-template isNotNone(T) { 
+template isNotNone(T) {
   enum isNotNone = !(isNone!T);
 }

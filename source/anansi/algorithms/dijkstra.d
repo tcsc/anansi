@@ -2,6 +2,8 @@ module anansi.algorithms.dijkstra;
 
 import anansi.container.priorityqueue;
 import anansi.algorithms.bfs;
+import anansi.algorithms.relax : relax;
+import anansi.algorithms.vertex_queue : VertexQueue;
 import anansi.traits;
 import anansi.types;
 import std.exception, std.math;
@@ -84,7 +86,7 @@ unittest {
  */
 struct NullDijkstraVisitor(GraphT) {
     alias Vertex = GraphT.VertexDescriptor;
-    alias Edge = GraphT.EdgeDescriptor;    
+    alias Edge = GraphT.EdgeDescriptor;
 
     void initVertex(ref const(GraphT) g, Vertex v) {}
     void discoverVertex(ref const(GraphT) g, Vertex v) {}
@@ -96,7 +98,7 @@ struct NullDijkstraVisitor(GraphT) {
 }
 
 /**
- * A BFS visitor that transforms a normal breadth-first search algoritm 
+ * A BFS visitor that transforms a normal breadth-first search algoritm
  * into Dijkstra's shortest paths.
  *
  * Remark: Not every `sumFunction` works correctly.
@@ -115,7 +117,7 @@ package struct DijkstraBfsVisitor(GraphT,
     static assert(isPropertyMap!(DistanceMapT, Vertex, real));
     static assert(isPropertyMap!(PredecessorMapT, Vertex, Vertex));
 
-    this(ref DijkstraVisitorT visitor, 
+    this(ref DijkstraVisitorT visitor,
          ref DistanceMapT distanceMap,
          ref const(WeightMapT) weightMap,
          ref PredecessorMapT predecessorMap,
@@ -154,7 +156,9 @@ package struct DijkstraBfsVisitor(GraphT,
     }
 
     void treeEdge(ref const(GraphT) g, Edge e) {
-        bool decreased = relax(g, e);
+        bool decreased = relax(g, *_weightMap,
+                                  *_distanceMap,
+                                  *_predecessorMap, e);
         if (decreased)
           _visitor.edgeRelaxed(g, e);
         else
@@ -167,7 +171,9 @@ package struct DijkstraBfsVisitor(GraphT,
         const Vertex v = g.target(e);
         auto oldDistance = (*_distanceMap)[v];
 
-        bool decreased = relax(g, e);
+        bool decreased = relax(g, *_weightMap,
+                                  *_distanceMap,
+                                  *_predecessorMap, e);
         if (decreased) {
             _queue.updateVertex(v);
             _visitor.edgeRelaxed(g, e);
@@ -182,36 +188,6 @@ package struct DijkstraBfsVisitor(GraphT,
         _visitor.finishVertex(g, v);
     }
 
-    private bool relax(ref const(GraphT) g, Edge e) {
-        Vertex u = g.source(e);
-        Vertex v = g.target(e);
-        static if (__traits(compiles, (*_weightMap)[e])) {
-            const auto edgeWeight = (*_weightMap)[e];
-        } else {
-            const auto edgeWeight = (*_weightMap)(e);
-        }
-        const auto dU = (*_distanceMap)[u];
-        const auto dV = (*_distanceMap)[v];
-
-        if ((dU + edgeWeight) < dV) {
-            (*_distanceMap)[v] = dU + edgeWeight;
-            (*_predecessorMap)[v] = u;
-
-            return true;
-        }
-        else {
-            static if (GraphT.IsUndirected) {
-                if ((dV + edgeWeight) < dU) {
-                    (*_distanceMap)[u] = dV + edgeWeight;
-                    (*_predecessorMap)[u] = v;
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     private DijkstraVisitorT* _visitor;
     private DistanceMapT* _distanceMap;
     private const(WeightMapT*) _weightMap;
@@ -224,11 +200,11 @@ package struct DijkstraBfsVisitor(GraphT,
  */
 template dijkstraShortestPaths(GraphT,
                                VertexDescriptorT,
-                               VisitorT = NullDijkstraVisitor!GraphT, 
+                               VisitorT = NullDijkstraVisitor!GraphT,
                                WeightMapT = real[VertexDescriptorT],
                                PredecessorMapT = VertexDescriptorT[VertexDescriptorT],
                                alias sumFunction = (a, b) => a+b) {
-    void dijkstraShortestPaths(ref const(GraphT) g, 
+    void dijkstraShortestPaths(ref const(GraphT) g,
                                VertexDescriptorT src,
                                ref const(WeightMapT) weights,
                                ref PredecessorMapT predecessorMap,
@@ -244,8 +220,8 @@ template dijkstraShortestPaths(GraphT,
         }
 
         dijkstraShortestPaths(g, src,
-                              weights, 
-                              predecessorMap, 
+                              weights,
+                              predecessorMap,
                               visitor,
                               colourMap,
                               distanceMap);
@@ -255,7 +231,7 @@ template dijkstraShortestPaths(GraphT,
 /**
  *
  */
-template dijkstraShortestPaths(GraphT, 
+template dijkstraShortestPaths(GraphT,
                                VisitorT,
                                VertexDescriptorT,
                                ColourMapT,
@@ -281,13 +257,13 @@ template dijkstraShortestPaths(GraphT,
 
         dijkstraShortestPathsNoInit(g, src, visitor,
                                     colourMap,
-                                    weights, 
+                                    weights,
                                     predecessorMap,
                                     distanceMap);
     }
 }
 
-template dijkstraShortestPathsNoInit(GraphT, 
+template dijkstraShortestPathsNoInit(GraphT,
                                      VertexDescriptorT,
                                      VisitorT = NullDijkstraVisitor!GraphT,
                                      ColourMapT = Colour[VertexDescriptorT],
@@ -313,18 +289,18 @@ template dijkstraShortestPathsNoInit(GraphT,
                                      ref PredecessorMapT predecessorMap,
                                      ref DistanceMapT distanceMap) {
 
-        alias QueueT = DijkstraQueue!(GraphT, DistanceMapT);
+        alias QueueT = VertexQueue!(GraphT, DistanceMapT);
         auto queue = QueueT(distanceMap);
 
-        alias Dijkstra = DijkstraBfsVisitor!(GraphT, 
+        alias Dijkstra = DijkstraBfsVisitor!(GraphT,
                                              QueueT,
-                                             VisitorT, 
+                                             VisitorT,
                                              DistanceMapT,
-                                             PredecessorMapT, 
+                                             PredecessorMapT,
                                              WeightMapT,
                                              sumFunction);
         breadthFirstVisit(
-            g, src, colourMap, 
+            g, src, colourMap,
             queue,
             Dijkstra(visitor, distanceMap, weights, predecessorMap, queue));
     }
@@ -333,13 +309,13 @@ template dijkstraShortestPathsNoInit(GraphT,
 version (unittest) {
     import std.array, std.algorithm, std.conv, std.stdio;
     import anansi.adjacencylist, anansi.traits, anansi.container.set;
-    private alias G = AdjacencyList!(VecS, VecS, DirectedS, char, string); 
+    private alias G = AdjacencyList!(VecS, VecS, DirectedS, char, string);
     private alias Vertex = G.VertexDescriptor;
     private alias Edge = G.EdgeDescriptor;
 }
 
 unittest {
-    writeln("Dijkstra: no edges shouldn't crash");  
+    writeln("Dijkstra: no edges shouldn't crash");
     G g;
     real[Edge] weights;
     Vertex[Vertex] predecessors;
@@ -350,11 +326,11 @@ unittest {
 unittest {
     writeln("Dijkstra: shorter paths with multiple hops are preferred over long path with one hop.");
 
-    //  / ----- 4 ----- \ 
+    //  / ----- 4 ----- \
     // a - 1 -> b - 1 -> c - 2 -> d
     //  \        \ ----- 5 ----- /
     //    3 -> e
-    //     
+    //
 
     G g;
     real[Edge] weights;
@@ -366,7 +342,7 @@ unittest {
 
     auto c = g.addVertex('c');
     weights[g.addEdge(b, c, "b -> c").edge] = 1.0;
-    weights[g.addEdge(a, c, "a -> c").edge] = 4.0; 
+    weights[g.addEdge(a, c, "a -> c").edge] = 4.0;
 
     auto d = g.addVertex('d');
     weights[g.addEdge(c, d, "c -> d").edge] = 2.0;

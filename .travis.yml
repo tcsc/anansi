@@ -11,3 +11,4 @@ script:
   - dub test
   - (cd "examples/Connected Components" && dub build)
   - (cd "examples/Dijkstra" && dub build)
+  - (cd "examples/Astar Cities" && dub build)
