@@ -36,7 +36,7 @@ void fn() {
   g.addEdge(a, b, "a -> b");
 
   // now dow something interesting with your graph
-  for(v; g.vertices) {
+  foreach(v; g.vertices) {
     writeln("Hi from vertex ", g[v]);
   }
 }
