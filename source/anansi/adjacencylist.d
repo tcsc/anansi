@@ -135,6 +135,10 @@ public:
         }
     }
 
+    public static auto edgesBetween(Vertex from, Vertex to) {
+        return filter!(e => e.target == to)(from.outEdges);
+    }
+
     /** 
      * The main vertex store.
      */
@@ -707,6 +711,8 @@ unittest {
                 auto eBC = addUniqueEdge(vB, vC);
                 auto eCD = addUniqueEdge(vC, vD);
                 auto eBD = addUniqueEdge(vB, vD);
+
+                assert (AdjacencyList.edgesBetween(vA, vB) == [eAB]); // TODO: Check for multigraph.
 
                 assert (g.edgeCount == 4, "edgeCount should be 4");
 
