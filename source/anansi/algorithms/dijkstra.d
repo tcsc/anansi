@@ -182,7 +182,11 @@ package struct DijkstraBfsVisitor(GraphT,
     private bool relax(ref const(GraphT) g, Edge e) {
         Vertex u = g.source(e);
         Vertex v = g.target(e);
-        const auto edgeWeight = (*_weightMap)[e];
+        static if (__traits(compiles, (*_weightMap)[e])) {
+            const auto edgeWeight = (*_weightMap)[e];
+        } else {
+            const auto edgeWeight = (*_weightMap)(e);
+        }
         const auto dU = (*_distanceMap)[u];
         const auto dV = (*_distanceMap)[v];
 
