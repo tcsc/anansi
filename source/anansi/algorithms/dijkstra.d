@@ -140,7 +140,12 @@ package struct DijkstraBfsVisitor(GraphT,
     }
 
     void examineEdge(ref const(GraphT) g, Edge e) {
-        auto weight = (*_weightMap)[e];
+        // TODO: Document the behavior of this `static if`.
+        static if (__traits(compiles, (*_weightMap)[e])) {
+            auto weight = (*_weightMap)[e];
+        } else {
+            auto weight = (*_weightMap)(e);
+        }
         enforce (weight >= 0.0);
         _visitor.examineEdge(g, e);
     }
@@ -177,7 +182,11 @@ package struct DijkstraBfsVisitor(GraphT,
     private bool relax(ref const(GraphT) g, Edge e) {
         Vertex u = g.source(e);
         Vertex v = g.target(e);
-        const auto edgeWeight = (*_weightMap)[e];
+        static if (__traits(compiles, (*_weightMap)[e])) {
+            const auto edgeWeight = (*_weightMap)[e];
+        } else {
+            const auto edgeWeight = (*_weightMap)(e);
+        }
         const auto dU = (*_distanceMap)[u];
         const auto dV = (*_distanceMap)[v];
 
