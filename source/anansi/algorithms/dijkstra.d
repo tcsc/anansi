@@ -98,13 +98,16 @@ struct NullDijkstraVisitor(GraphT) {
 /**
  * A BFS visitor that transforms a normal breadth-first search algoritm 
  * into Dijkstra's shortest paths.
+ *
+ * Remark: Not every `sumFunction` works correctly.
  */
 package struct DijkstraBfsVisitor(GraphT,
                                   QueueT,
                                   DijkstraVisitorT,
                                   DistanceMapT,
                                   PredecessorMapT,
-                                  WeightMapT) {
+                                  WeightMapT,
+                                  alias sumFunction = (a, b) => a+b) {
     alias Vertex = GraphT.VertexDescriptor;
     alias Edge = GraphT.EdgeDescriptor;
 
@@ -223,7 +226,8 @@ template dijkstraShortestPaths(GraphT,
                                VertexDescriptorT,
                                VisitorT = NullDijkstraVisitor!GraphT, 
                                WeightMapT = real[VertexDescriptorT],
-                               PredecessorMapT = VertexDescriptorT[VertexDescriptorT]) {
+                               PredecessorMapT = VertexDescriptorT[VertexDescriptorT],
+                               alias sumFunction = (a, b) => a+b) {
     void dijkstraShortestPaths(ref const(GraphT) g, 
                                VertexDescriptorT src,
                                ref const(WeightMapT) weights,
@@ -257,7 +261,8 @@ template dijkstraShortestPaths(GraphT,
                                ColourMapT,
                                PredecessorMapT,
                                WeightMapT,
-                               DistanceMapT) {
+                               DistanceMapT,
+                               alias sumFunction = (a, b) => a+b) {
     void dijkstraShortestPaths(ref const(GraphT) g,
                                VertexDescriptorT src,
                                ref const(WeightMapT) weights,
@@ -288,7 +293,8 @@ template dijkstraShortestPathsNoInit(GraphT,
                                      ColourMapT = Colour[VertexDescriptorT],
                                      PredecessorMapT = VertexDescriptorT[VertexDescriptorT],
                                      WeightMapT = real[VertexDescriptorT],
-                                     DistanceMapT = real[VertexDescriptorT]) {
+                                     DistanceMapT = real[VertexDescriptorT],
+                                     alias sumFunction = (a, b) => a+b) {
     static assert(isGraph!GraphT);
 
     alias EdgeDescriptorT = GraphT.EdgeDescriptor;
@@ -315,11 +321,12 @@ template dijkstraShortestPathsNoInit(GraphT,
                                              VisitorT, 
                                              DistanceMapT,
                                              PredecessorMapT, 
-                                             WeightMapT);
+                                             WeightMapT,
+                                             sumFunction);
         breadthFirstVisit(
             g, src, colourMap, 
             queue,
-            Dijkstra(visitor, distanceMap, weights, predecessorMap, queue));
+            Dijkstra(visitor, distanceMap, weights, predecessorMap, queue, sumFunction));
     }
 }
 
