@@ -135,7 +135,7 @@ public:
         }
     }
 
-    /** 
+    /**
      * The main vertex store.
      */
     VertexStorage.Store!Vertex _vertices;
@@ -399,6 +399,10 @@ public:
     @property size_t edgeCount() const {
         return _edges.length;
     }
+}
+
+public auto edgesBetween(Vertex)(Vertex from, Vertex to) {
+    return filter!(e => e.target == to)(from.outEdges);
 }
 
 // ----------------------------------------------------------------------------
@@ -707,6 +711,8 @@ unittest {
                 auto eBC = addUniqueEdge(vB, vC);
                 auto eCD = addUniqueEdge(vC, vD);
                 auto eBD = addUniqueEdge(vB, vD);
+
+                assert (edgesBetween(vA, vB) == [eAB]); // TODO: Check for multigraph.
 
                 assert (g.edgeCount == 4, "edgeCount should be 4");
 
