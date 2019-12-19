@@ -7,4 +7,7 @@ d:
   - dmd-2.069.0
 
 script:
+  - dub build
   - dub test
+  - (cd "examples/Connected Components" && dub build)
+  - (cd "examples/Dijkstra" && dub build)
