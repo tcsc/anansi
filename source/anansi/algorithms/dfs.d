@@ -224,8 +224,8 @@ version (unittest) {
     import std.array, std.algorithm, std.conv, std.stdio;
     import anansi.adjacencylist, anansi.traits, anansi.container.set;
 
-    int indexOf(ValueT)(ValueT[] haystack, ValueT needle) {
-        foreach(int n, v; haystack) {
+    auto indexOf(ValueT)(ValueT[] haystack, ValueT needle) {
+        foreach(n, v; haystack) {
             if (v == needle) return n; 
         }
         return -1;

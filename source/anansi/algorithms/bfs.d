@@ -180,8 +180,8 @@ version (unittest) {
     import std.algorithm, std.conv, std.stdio;
     import anansi.adjacencylist;
 
-    int indexOf(ValueT)(ValueT[] haystack, ValueT needle) {
-        foreach(int n, v; haystack) {
+    auto indexOf(ValueT)(ValueT[] haystack, ValueT needle) {
+        foreach(n, v; haystack) {
             if (v == needle) return n; 
         }
         return -1;

@@ -77,7 +77,11 @@ public:
             private EdgeContainer _inEdges;
         }
 
-        public this(VertexProperty p = VertexProperty.init) {
+        static if (isNotNone!VertexProperty) {
+            
+        }
+
+        public this(VertexProperty p) {
             static if (isNotNone!VertexProperty) {
                 _property = p;
             }
@@ -399,10 +403,10 @@ public:
     @property size_t edgeCount() const {
         return _edges.length;
     }
-}
 
-public auto edgesBetween(Vertex)(Vertex from, Vertex to) {
-    return filter!(e => e.target == to)(from.outEdges);
+    auto edgesBetween(VertexDescriptor from, VertexDescriptor to) {
+        return filter!(e => target(e) == to)(outEdges(from));
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -681,6 +685,8 @@ unittest {
 }
 
 unittest {
+    import std.algorithm.comparison : equal;
+
     writeln("AdjacencyList: Removing edges works as expected.");
     foreach(VertexStorage; TypeTuple!(VecS, ListS)) {
         foreach(EdgeStorage; TypeTuple!(VecS, ListS)) {
@@ -712,7 +718,7 @@ unittest {
                 auto eCD = addUniqueEdge(vC, vD);
                 auto eBD = addUniqueEdge(vB, vD);
 
-                assert (edgesBetween(vA, vB) == [eAB]); // TODO: Check for multigraph.
+                assert (equal(g.edgesBetween(vA, vB), [eAB])); // TODO: Check for multigraph.
 
                 assert (g.edgeCount == 4, "edgeCount should be 4");
 

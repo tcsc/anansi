@@ -326,7 +326,7 @@ template dijkstraShortestPathsNoInit(GraphT,
         breadthFirstVisit(
             g, src, colourMap, 
             queue,
-            Dijkstra(visitor, distanceMap, weights, predecessorMap, queue, sumFunction));
+            Dijkstra(visitor, distanceMap, weights, predecessorMap, queue));
     }
 }
 

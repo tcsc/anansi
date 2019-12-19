@@ -6,7 +6,7 @@ version(unittest) {
     import std.range;
 }
 
-package struct Array(T) {
+public struct Array(T) {
 private:
     this(size_t size, T[] payload) {
         _size = size;
